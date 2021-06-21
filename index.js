@@ -57,7 +57,7 @@ async function main() {
  */
 function readKeywords() {
     return JSON.parse(fs.readFileSync('keywords.json')).map(k => ({
-        val: k.val.toLowerCase(),
+        regex: new RegExp(k.val, 'gi'),
         labels: k.labels.map(l => l.toLowerCase())
     }));
 }
@@ -175,10 +175,6 @@ function logMessage(message) {
  * @returns {boolean} True if the message is trash, False otherwise.
  */
 function isTrashMessage(message, keywords) {
-    if (message.labels.includes('trash')) {
-        return true;
-    }
-
     for (keyword of keywords) {
         if (isTrashKeywordMatch(message, keyword)) {
             return true;
@@ -196,10 +192,10 @@ function isTrashMessage(message, keywords) {
  * @returns {boolean} True if the message is trash, False otherwise.
  */
 function isTrashKeywordMatch(message, keyword) {
-    let found = message.snippet.includes(keyword.val) ||
-        message.subject.includes(keyword.val) ||
-        message.from.includes(keyword.val) ||
-        message.body.includes(keyword.val);
+    let found = keyword.regex.test(message.snippet) ||
+        keyword.regex.test(message.subject) ||
+        keyword.regex.test(message.from) ||
+        keyword.regex.test(message.body);
     if (!found) {
         return false;
     }
@@ -227,10 +223,10 @@ async function getMessage(messages, id) {
 
     return {
         labels: message.data.labelIds.map(l => l.toLowerCase()),
-        snippet: message.data.snippet.toLowerCase(),
-        subject: getHeader(message, 'Subject').toLowerCase(),
-        from: getHeader(message, 'From').toLowerCase(),
-        body: getBody(message).toLowerCase(),
+        snippet: message.data.snippet,
+        subject: getHeader(message, 'Subject'),
+        from: getHeader(message, 'From'),
+        body: getBody(message),
     }
 }
 
