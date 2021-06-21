@@ -1,0 +1,6 @@
+[
+    { "val": "your credit", "labels": ["spam"] },
+    { "val": "casino", "labels": ["*"] },
+    { "val": "lucky winner", "labels": ["spam"] },
+    { "val": "pharma", "labels": ["spam"] }
+]

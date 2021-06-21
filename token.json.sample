@@ -1,0 +1,7 @@
+{
+    "access_token": "<access token here>",
+    "refresh_token": "<refresh token here>",
+    "scope": "https://mail.google.com/",
+    "token_type": "Bearer",
+    "expiry_date": 1624229594428
+}

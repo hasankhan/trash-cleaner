@@ -1,0 +1,15 @@
+{
+  "name": "gmail-cleanup",
+  "version": "1.0.0",
+  "description": "Finds and deletes trash email in a Gmail account",
+  "main": "index.js",
+  "dependencies": {
+    "googleapis": "^77.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Muhammad Hasan Khan",
+  "license": "ISC"
+}
