@@ -129,6 +129,7 @@ async function getNewToken(oAuth2Client) {
  * Finds trash emails in the mailbox.
  *
  * @param {gmail_v1.Gmail} gmail An instance of Gmail client.
+ * @param {string[]} keywords The list of keywords to look for in the messages.
  * @returns {string[]} The list of trash message ids.
  */
 async function findTrashMessages(gmail, keywords) {
@@ -188,7 +189,7 @@ function isTrashMessage(message, keywords) {
  * Checks if a message is trash according to given keyword.
  * 
  * @param {gmail_v1.Schema$Message} message The message to check.
- * @param {string[]} keywords The list of keywords to look for in the message.
+ * @param {string} keyword The keyword to look for in the message.
  * @returns {boolean} True if the message is trash, False otherwise.
  */
 function isTrashKeywordMatch(message, keyword) {
@@ -210,7 +211,7 @@ function isTrashKeywordMatch(message, keyword) {
 }
 
 /**
- * Gets the message in the user's account.
+ * Gets the message from the user's account.
  *
  * @param {gmail_v1.Resource$Users$Messages} messages The messages resource.
  * @param {string} id The message id.
@@ -231,7 +232,8 @@ async function getMessage(messages, id) {
 }
 
 /**
- * 
+ * Reads the body of the message.
+ *
  * @param {gmail_v1.Schema$Message} message The message.
  * @returns {string} The body.
  */
