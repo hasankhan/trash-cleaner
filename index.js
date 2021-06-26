@@ -1,6 +1,8 @@
 const fs = require('fs');
-const util = require('util')
+const path = require('path');
 const readline = require('readline');
+const util = require('util')
+
 const { google, gmail_v1 } = require('googleapis');
 const { OAuth2Client } = require('google-auth-library');
 
@@ -9,7 +11,12 @@ const SCOPES = ['https://mail.google.com/'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = 'token.json';
+const PATH_TOKEN = path.join(__dirname, 'token.json');
+// The file credentials.json stores the google api credentials.
+const PATH_CREDENTIALS = path.join(__dirname, 'credentials.json');
+// The file keywords.json stores the keywords and labels to use when finding
+// trash email.
+const PATH_KEYWORDS = path.join(__dirname, 'keywords.json');
 
 /**
  * Responds to any HTTP request.
@@ -31,7 +38,7 @@ exports.main = (req, res) => {
 async function main() {
     var oAuth2Client;
     try {
-        let content = fs.readFileSync('credentials.json');
+        let content = fs.readFileSync(PATH_CREDENTIALS);
         // Authorize a client with credentials, then call the Gmail API.
         oAuthClient = await authorize(JSON.parse(content));
     } catch (err) {
@@ -56,7 +63,7 @@ async function main() {
  * @returns {[Object]} List of keywords and their labels for trash search.
  */
 function readKeywords() {
-    return JSON.parse(fs.readFileSync('keywords.json')).map(k => ({
+    return JSON.parse(fs.readFileSync(PATH_KEYWORDS)).map(k => ({
         regex: new RegExp(k.val, 'gi'),
         labels: k.labels.map(l => l.toLowerCase())
     }));
@@ -93,7 +100,7 @@ async function authorize(credentials) {
 
     // Check if we have previously stored a token.
     try {
-        let token = fs.readFileSync(TOKEN_PATH);
+        let token = fs.readFileSync(PATH_TOKEN);
         oAuthClient.setCredentials(JSON.parse(token));
     } catch (err) {
         await getNewToken(oAuthClient)
@@ -121,8 +128,8 @@ async function getNewToken(oAuth2Client) {
     let token = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(token);
     // Store the token to disk for later program executions
-    fs.writeFileSync(TOKEN_PATH, JSON.stringify(token))
-    console.log(`Token stored to ${TOKEN_PATH}.`);
+    fs.writeFileSync(PATH_TOKEN, JSON.stringify(token))
+    console.log(`Token stored to ${PATH_TOKEN}.`);
 }
 
 /**
