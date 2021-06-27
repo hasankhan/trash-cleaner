@@ -1,20 +1,9 @@
 const diacriticLess = require('diacriticless');
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
-const util = require('util')
 
-const { google, gmail_v1 } = require('googleapis');
-const { OAuth2Client } = require('google-auth-library');
+const { Email, GmailClient, GmailClientFactory } = require('./gmail-client');
 
-// If modifying these scopes, delete token.json.
-const SCOPES = ['https://mail.google.com/'];
-// The file token.json stores the user's access and refresh tokens, and is
-// created automatically when the authorization flow completes for the first
-// time.
-const PATH_TOKEN = path.join(__dirname, 'token.json');
-// The file credentials.json stores the google api credentials.
-const PATH_CREDENTIALS = path.join(__dirname, 'credentials.json');
 // The file keywords.json stores the keywords and labels to use when finding
 // trash email.
 const PATH_KEYWORDS = path.join(__dirname, 'keywords.json');
@@ -37,25 +26,15 @@ exports.main = (req, res) => {
  * Entry point of the program encapsulated in a function to allow usage of await.
  */
 async function main() {
-    var oAuth2Client;
-    try {
-        let content = fs.readFileSync(PATH_CREDENTIALS);
-        // Authorize a client with credentials, then call the Gmail API.
-        oAuthClient = await authorize(JSON.parse(content));
-    } catch (err) {
-        console.error('Error loading client secret file: ', err);
-        throw err;
-    }
-
-    let gmail = google.gmail({ version: 'v1', auth: oAuthClient });
+    let client = await new GmailClientFactory().getClient();
     let keywords = readKeywords();
-    let messageIds = await findTrashMessages(gmail, keywords);
-    if (messageIds.length == 0) {
+    let emails = await findTrashEmails(client, keywords);
+    if (emails.length == 0) {
         console.log("No trash messages found!");
         return;
     }
 
-    await deleteMessages(gmail, messageIds);
+    await client.deleteEmails(emails);
 }
 
 /**
@@ -71,121 +50,55 @@ function readKeywords() {
 }
 
 /**
- * Deletes the messages specified by message ids.
- * 
- * @param {gmail_v1.Gmail} gmail An instance of Gmail client.
- * @param {string[]} messageIds List of message ids to delete.
- */
-async function deleteMessages(gmail, messageIds) {
-    try {
-        await gmail.users.messages.batchDelete({
-            userId: 'me',
-            ids: messageIds
-        });
-        console.log("Successfully deleted trash messages.");
-    } catch (err) {
-        console.error('Failed to delete messages: ', err);
-        throw err;
-    }
-}
-
-/**
- * Create an OAuth2 client with the given credentials
- * @param {Object} credentials The authorization client credentials.
- * @returns {OAuth2Client} The authorization client.
- */
-async function authorize(credentials) {
-    const { client_secret, client_id, redirect_uris } = credentials.installed;
-    const oAuthClient = new google.auth.OAuth2(
-        client_id, client_secret, redirect_uris[0]);
-
-    // Check if we have previously stored a token.
-    try {
-        let token = fs.readFileSync(PATH_TOKEN);
-        oAuthClient.setCredentials(JSON.parse(token));
-    } catch (err) {
-        await getNewToken(oAuthClient)
-    }
-    return oAuthClient
-}
-
-/**
- * Get and store new token after prompting for user authorization and returns the 
- * authorized OAuth2 client.
- * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
- */
-async function getNewToken(oAuth2Client) {
-    const authUrl = oAuth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: SCOPES,
-    });
-    console.log('Authorize this app by visiting this url:', authUrl);
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    });
-    let code = await util.promisify(rl.question)('Enter the code from that page here: ');
-    rl.close();
-    let token = await oAuth2Client.getToken(code);
-    oAuth2Client.setCredentials(token);
-    // Store the token to disk for later program executions
-    fs.writeFileSync(PATH_TOKEN, JSON.stringify(token))
-    console.log(`Token stored to ${PATH_TOKEN}.`);
-}
-
-/**
  * Finds trash emails in the mailbox.
  *
- * @param {gmail_v1.Gmail} gmail An instance of Gmail client.
+ * @param {GmailClient} client An instance of Gmail client.
  * @param {string[]} keywords The list of keywords to look for in the messages.
  * @returns {string[]} The list of trash message ids.
  */
-async function findTrashMessages(gmail, keywords) {
-    let res = await gmail.users.messages.list({
-        userId: 'me',
-        labelIds: 'UNREAD',
-        includeSpamTrash: 'true',
-    });
-    if (!res.data.messages) {
-        return [];
+async function findTrashEmails(client, keywords) {
+    let emails;
+
+    try {
+        emails = await client.getUnreadEmails();
+    } catch (err) {
+        console.error("Failed to get unread emails: ", err);
     }
 
-    let messageIds = [];
-    for (message of res.data.messages) {
-        let msg = await getMessage(gmail.users.messages, message.id);
-        if (isTrashMessage(msg, keywords)) {
-            messageIds.push(message.id);
-            logMessage(msg);
-        }
+    let trashEmails = emails.map(normalizeEmail)
+        .filter(email => isTrashEmail(email, keywords));
+
+    for (email of trashEmails) {
+        logEmail(email);
     }
 
-    return messageIds;
+    return trashEmails;
 }
 
 /**
- * Logs the key properties of a message to the console.
+ * Logs the key properties of an email to the console.
  * 
- * @param {gmail_v1.Schema$Message} message The message to log. 
+ * @param {Email} email The email to log. 
  */
-function logMessage(message) {
-    console.log(`From: ${message.from}`);
-    console.log(`Labels: ${message.labels}`);
-    console.log(`Subject: ${message.subject}`);
-    console.log(`Snippet: ${message.snippet}`);
-    console.log(`Body: ${message.body}`);
+function logEmail(email) {
+    console.log(`From: ${email.from}`);
+    console.log(`Labels: ${email.labels}`);
+    console.log(`Subject: ${email.subject}`);
+    console.log(`Snippet: ${email.snippet}`);
+    console.log(`Body: ${email.body}`);
     console.log('-'.repeat(60));
 }
 
 /**
  * Checks if a message is trash according to keywords list.
  * 
- * @param {gmail_v1.Schema$Message} message The message to check.
+ * @param {Email} email The email to check.
  * @param {string[]} keywords The list of keywords to look for in the message.
  * @returns {boolean} True if the message is trash, False otherwise.
  */
-function isTrashMessage(message, keywords) {
+function isTrashEmail(email, keywords) {
     for (keyword of keywords) {
-        if (isTrashKeywordMatch(message, keyword)) {
+        if (isTrashKeywordMatch(email, keyword)) {
             return true;
         }
     }
@@ -219,45 +132,19 @@ function isTrashKeywordMatch(message, keyword) {
 }
 
 /**
- * Gets the message from the user's account.
+ * Normalizes email object fields for keyword matching.
  *
- * @param {gmail_v1.Resource$Users$Messages} messages The messages resource.
- * @param {string} id The message id.
+ * @param {Email} email The email object to normalize.
+ * @returns {Email} The same email object as input after normalization.
  */
-async function getMessage(messages, id) {
-    let message = await messages.get({
-        userId: 'me',
-        id: id
-    });
+function normalizeEmail(email) {
+    email.labels = email.labels.map(l => l.toLowerCase());
+    email.snippet = diacriticLess(email.snippet);
+    email.subject = diacriticLess(email.subject);
+    email.from = diacriticLess(email.from);
+    email.body = diacriticLess(email.body);
 
-    return {
-        labels: message.data.labelIds.map(l => l.toLowerCase()),
-        snippet: diacriticLess(message.data.snippet),
-        subject: diacriticLess(getHeader(message, 'Subject')),
-        from: diacriticLess(getHeader(message, 'From')),
-        body: diacriticLess(getBody(message)),
-    }
-}
-
-/**
- * Reads the body of the message.
- *
- * @param {gmail_v1.Schema$Message} message The message.
- * @returns {string} The body.
- */
-function getBody(message) {
-    if (!message.data.payload.body.data) return '';
-    return Buffer.from(message.data.payload.body.data, 'base64').toString('utf-8');
-}
-
-/**
- * Gets the header from a message
- * 
- * @param {gmail_v1.Schema$Message} message The message.
- * @param {string} name The name of header to read.
- */
-function getHeader(message, name) {
-    return message.data.payload.headers.find(header => header.name == name).value
+    return email;
 }
 
 const isRunningInGoogleCloud = !!process.env.GCP_PROJECT
