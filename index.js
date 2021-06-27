@@ -1,3 +1,4 @@
+const diacriticLess = require('diacriticless');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
@@ -231,10 +232,10 @@ async function getMessage(messages, id) {
 
     return {
         labels: message.data.labelIds.map(l => l.toLowerCase()),
-        snippet: message.data.snippet,
-        subject: getHeader(message, 'Subject'),
-        from: getHeader(message, 'From'),
-        body: getBody(message),
+        snippet: diacriticLess(message.data.snippet),
+        subject: diacriticLess(getHeader(message, 'Subject')),
+        from: diacriticLess(getHeader(message, 'From')),
+        body: diacriticLess(getBody(message)),
     }
 }
 

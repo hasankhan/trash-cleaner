@@ -4,6 +4,7 @@
   "description": "Finds and deletes trash email in a Gmail account",
   "main": "index.js",
   "dependencies": {
+    "diacriticless": "^1.0.1",
     "googleapis": "^77.0.0"
   },
   "devDependencies": {},
