@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const util = require('util')
 
 const { google, gmail_v1 } = require('googleapis');
 const { OAuth2Client } = require('google-auth-library');
+const { Email, EmailClient } = require('./email-client');
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://mail.google.com/'];
@@ -16,29 +16,16 @@ const PATH_TOKEN = path.join(__dirname, 'token.json');
 const PATH_CREDENTIALS = path.join(__dirname, 'credentials.json');
 
 /**
- * Email object that represents a mail message in the mailbox.
+ * A Gmail client to get unread emails from mailbox.
  */
-class Email {
-    constructor() {
-        this.id = '';
-        this.labels = [];
-        this.snippet = '';
-        this.subject = '';
-        this.from = '';
-        this.body = '';
-    }
-}
-
-/**
- * A Gmail client to get unread emails from mailbox. 
- */
-class GmailClient {
+class GmailClient extends EmailClient {
     /**
-     * Constructs the GmailClient instance.
+     * Constructs the {GmailClient} instance.
      * 
      * @param {gmail_v1.Gmail} gmail An instance of gmail client.
      */
     constructor(gmail) {
+        super();
         this._gmail = gmail;
     }
 
@@ -80,8 +67,7 @@ class GmailClient {
             });
             console.log("Successfully deleted trash messages.");
         } catch (err) {
-            console.error('Failed to delete messages: ', err);
-            throw err;
+            throw new Error(`Failed to delete messages: ${err}`);
         }
     }
 
@@ -129,9 +115,8 @@ class GmailClient {
             .toString('utf-8');
     }
 
-
     /**
-     * Gets the header from a message
+     * Gets the header from a message.
      * 
      * @param {gmail_v1.Schema$Message} message The message.
      * @param {string} name The name of header to read.
@@ -160,8 +145,7 @@ class GmailClientFactory {
             // Authorize a client with credentials, then call the Gmail API.
             auth = await this._authorize(JSON.parse(content));
         } catch (err) {
-            console.error('Error loading client secret file: ', err);
-            throw err;
+            throw new Error(`Error creating client instance: ${err}`);
         }
 
         let gmail = google.gmail({ version: 'v1', auth: auth });
@@ -169,7 +153,7 @@ class GmailClientFactory {
     }
 
     /**
-     * Create an OAuth2 client with the given credentials
+     * Create an OAuth2 client with the given credentials.
      *
      * @param {Object} credentials The authorization client credentials.
      * @returns {OAuth2Client} The authorization client.
@@ -197,7 +181,7 @@ class GmailClientFactory {
      * 
      * @param {google.auth.OAuth2} auth The OAuth2 client to get token for.
      */
-     async _createNewToken(auth) {
+    async _createNewToken(auth) {
         const authUrl = auth.generateAuthUrl({
             access_type: 'offline',
             scope: SCOPES,
@@ -220,4 +204,4 @@ class GmailClientFactory {
 
 }
 
-module.exports = { Email, GmailClient, GmailClientFactory };
+module.exports = { GmailClient, GmailClientFactory };
