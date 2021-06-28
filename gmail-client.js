@@ -15,21 +15,24 @@ const PATH_TOKEN = path.join(__dirname, 'token.json');
 // The file credentials.json stores the google api credentials.
 const PATH_CREDENTIALS = path.join(__dirname, 'credentials.json');
 
+/**
+ * Email object that represents a mail message in the mailbox.
+ */
 class Email {
-    id = '';
-    labels = [];
-    snippet = '';
-    subject = '';
-    from = '';
-    body = '';
+    constructor() {
+        this.id = '';
+        this.labels = [];
+        this.snippet = '';
+        this.subject = '';
+        this.from = '';
+        this.body = '';
+    }
 }
 
 /**
  * A Gmail client to get unread emails from mailbox. 
  */
 class GmailClient {
-    _gmail = null;
-
     /**
      * Constructs the GmailClient instance.
      * 
