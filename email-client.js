@@ -34,4 +34,17 @@ class EmailClient {
     }
 }
 
-module.exports = {Email, EmailClient}
+/**
+ * Factory for EmailClient objects.
+ */
+class EmailClientFactory {
+    /**
+     * Creates an instance of EmailClient.
+     * 
+     * @returns {EmailClient} The Gmail client. 
+     */
+     getClient() {
+     }
+}
+
+module.exports = {Email, EmailClient, EmailClientFactory}

@@ -4,7 +4,7 @@ const readline = require('readline');
 
 const { google, gmail_v1 } = require('googleapis');
 const { OAuth2Client } = require('google-auth-library');
-const { Email, EmailClient } = require('./email-client');
+const { Email, EmailClient, EmailClientFactory } = require('./email-client');
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://mail.google.com/'];
@@ -132,7 +132,7 @@ class GmailClient extends EmailClient {
 /**
  * Factory for GmailClient objects.
  */
-class GmailClientFactory {
+class GmailClientFactory extends EmailClientFactory {
     /**
      * Creates an instance of GmailClient.
      * 
