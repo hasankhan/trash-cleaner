@@ -10,6 +10,84 @@ const { GmailClientFactory } = require('./gmail-client');
 const PATH_KEYWORDS = path.join(__dirname, 'keywords.json');
 
 /**
+ * An object to represent single trash keyword configuration. 
+ */
+class TrashKeyword {
+    /**
+     * 
+     * @param {string} value The keyword pattern.   
+     * @param {string[]} labels The list of labels to search in. 
+     */
+    constructor(value, labels) {
+        if (!value || !labels || !labels.length) {
+            throw new Error("Invalid keyword");
+        }
+        this.value = value;
+        this.labels = labels;
+    }
+}
+
+/**
+ * Base class for trash rules.
+ */
+class TrashRule {
+    /**
+     * Applies the rule to the email attributes and returns result.
+     * 
+     * @param {Email} email The email to match the rule with.
+     * @returns {boolean} True if the rule matches, False otherwise.
+     */
+    isMatch(email) {
+        return false;
+    }
+}
+
+/**
+ * A trash identification rule based on TrashKeyword.
+ */
+class KeywordTrashRule extends TrashRule {
+    /**
+     * Creates an instance of KeywordTrashRule for the given keyword.
+     * 
+     * @param {TrashKeyword} keyword The keyword to create rule for.
+     */
+    constructor(keyword) {
+        super();
+        if (!keyword || !keyword.value || !keyword.labels ||
+            !keyword.labels.length) {
+            throw new Error("Invalid keyword");
+        }
+
+        this.regex = new RegExp(keyword.value, 'gi'),
+            this.labels = keyword.labels.map(l => l.toLowerCase())
+    }
+
+    /**
+     * Applies the rule to the email attributes and returns result.
+     * 
+     * @param {Email} email The email to match the rule with.
+     * @returns {boolean} True if the rule matches, False otherwise.
+     */
+    isMatch(email) {
+        let found = this.regex.test(email.snippet) ||
+            this.regex.test(email.subject) ||
+            this.regex.test(email.from) ||
+            this.regex.test(email.body);
+        if (!found) {
+            return false;
+        }
+
+        for (let label of this.labels) {
+            if (label == "*" || email.labels.includes(label)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+/**
  * An object that can clean trash emails from the mailbox.
  */
 class TrashCleaner {
@@ -17,11 +95,11 @@ class TrashCleaner {
      * Creates an instance of TrashCleaner.
      * 
      * @param {EmailClient} client 
-     * @param {Object[]} keywords 
+     * @param {TrashKeyword[]} keywords 
      */
     constructor(client, keywords) {
         this._client = client;
-        this._keywords = this._prepareKeywords(keywords);
+        this._rules = this._createRules(keywords);
     }
 
     /**
@@ -42,15 +120,13 @@ class TrashCleaner {
     }
 
     /**
-     * Read the list of keywords and their labels for trash search.
+     * Converts the list of keywords into trash rules.
      * 
-     * @returns {[Object]} List of keywords and their labels for trash search.
+     * @param {TrashKeyword[]} keywords List of keywords and their labels for trash search.
+     * @returns {KeywordTrashRule[]]} The trash rules based on keywords.
      */
-    _prepareKeywords(keywords) {
-        return keywords.map(k => ({
-            regex: new RegExp(k.val, 'gi'),
-            labels: k.labels.map(l => l.toLowerCase())
-        }));
+    _createRules(keywords) {
+        return keywords.map(keyword => new KeywordTrashRule(keyword));
     }
 
     /**
@@ -94,33 +170,8 @@ class TrashCleaner {
      * @returns {boolean} True if the message is trash, False otherwise.
      */
     _isTrashEmail(email) {
-        for (let keyword of this._keywords) {
-            if (this._isTrashKeywordMatch(email, keyword)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks if an email is trash according to given keyword.
-     * 
-     * @param {Email} email The email to check.
-     * @param {string} keyword The keyword to look for in the email.
-     * @returns {boolean} True if the email is trash, False otherwise.
-     */
-    _isTrashKeywordMatch(email, keyword) {
-        let found = keyword.regex.test(email.snippet) ||
-            keyword.regex.test(email.subject) ||
-            keyword.regex.test(email.from) ||
-            keyword.regex.test(email.body);
-        if (!found) {
-            return false;
-        }
-
-        for (let label of keyword.labels) {
-            if (label == "*" || email.labels.includes(label)) {
+        for (let rule of this._rules) {
+            if (rule.isMatch(email)) {
                 return true;
             }
         }
@@ -148,18 +199,28 @@ class TrashCleaner {
 /**
  * Factory for TrashCleaner objects.
  */
- class TrashCleanerFactory {
+class TrashCleanerFactory {
     /**
      * Creates an instance of TrashCleaner.
      * 
      * @returns {TrashCleaner} The TrashCleaner instance. 
      */
-     async getInstance() {
+    async getInstance() {
         let client = await new GmailClientFactory().getInstance();
-        let keywords = JSON.parse(fs.readFileSync(PATH_KEYWORDS));
+        let keywords = this.readKeywords();
         let cleaner = new TrashCleaner(client, keywords);
         return cleaner;
-     }
+    }
+
+    /**
+     * Reads the trash keywords from the config file.
+     * 
+     * @returns {TrashKeyword[]} A list of trash keywords.
+     */
+    readKeywords() {
+        return JSON.parse(fs.readFileSync(PATH_KEYWORDS))
+            .map(keyword => new TrashKeyword(keyword.value, keyword.labels));
+    }
 }
 
-module.exports = { TrashCleaner, TrashCleanerFactory }
+module.exports = { TrashKeyword, TrashCleaner, TrashCleanerFactory }

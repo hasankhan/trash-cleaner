@@ -1,13 +1,35 @@
 const assert = require('assert');
 const sinon = require('sinon');
+
 const { Email } = require('../email-client');
-const { TrashCleaner } = require('../trash-cleaner');
+const { TrashKeyword, TrashCleaner } = require('../trash-cleaner');
+
+describe('TrashKeyword', ()=> {
+  describe('constructor', ()=>{
+    it('throws when value is not set', ()=> {
+      assert.throws(() => new TrashKeyword(null, ["spam"]), /Invalid keyword/);
+    })
+
+    it('throws when labels are not set', ()=> {
+      assert.throws(() => new TrashKeyword("apple", null), /Invalid keyword/);
+      assert.throws(() => new TrashKeyword("apple", []), /Invalid keyword/);
+    })
+
+    it('does not throw when value and labels are set', ()=> {
+      assert.doesNotThrow(() => new TrashKeyword("apple", ["spam"]));
+    })
+  })
+});
 
 describe('TrashCleaner', () => {
   var client, email;
 
   before(() => {
     sinon.stub(console, 'log');
+  });
+
+  after(() => {
+    console.log.restore();
   });
 
   beforeEach(() => {
@@ -20,68 +42,81 @@ describe('TrashCleaner', () => {
   });
 
   describe('cleanTrash', () => {
-    it('uses regex', async () => {
-      email.body = 'orange';
-      email.labels = ["spam"];
+    it('does not delete email that does not match', async() => {
+      email.body = 'apple';
+      email.labels = ['spam'];
 
       let cleaner = new TrashCleaner(client, [{
-        val: "mango|apple|orange", labels: ["spam"]
+        value: 'orange', labels: ['spam']
       }])
 
       await cleaner.cleanTrash();
 
-      assert(client.deleteEmails.calledWith([email]));
+      sinon.assert.notCalled(client.deleteEmails);
+    });
+
+    it('uses regex', async () => {
+      email.body = 'orange';
+      email.labels = ['spam'];
+
+      let cleaner = new TrashCleaner(client, [{
+        value: 'mango|apple|orange', labels: ['spam']
+      }])
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.calledWith(client.deleteEmails, [email]);
     });
 
     it('finds spam with diacritics', async () => {
       email.body = 'Ápplé';
-      email.labels = ["spam"];
+      email.labels = ['spam'];
 
       let cleaner = new TrashCleaner(client, [{
-        val: "apple", labels: ["spam"]
+        value: 'apple', labels: ['spam']
       }])
 
       await cleaner.cleanTrash();
 
-      assert(client.deleteEmails.calledWith([email]));
+      sinon.assert.calledWith(client.deleteEmails, [email]);
     });
 
     it('finds spam with wildcard label', async () => {
       email.body = 'apple';
-      email.labels = ["spam"];
+      email.labels = ['spam'];
 
       let cleaner = new TrashCleaner(client, [{
-        val: "apple", labels: ["*"]
+        value: 'apple', labels: ['*']
       }])
 
       await cleaner.cleanTrash();
 
-      assert(client.deleteEmails.calledWith([email]));
+      sinon.assert.calledWith(client.deleteEmails, [email]);
     });
 
     it('does not find spam when label does not match', async () => {
       email.body = 'apple';
-      email.labels = ["spam"];
+      email.labels = ['spam'];
 
       let cleaner = new TrashCleaner(client, [{
-        val: "apple", labels: ["inbox"]
+        value: 'apple', labels: ['inbox']
       }])
 
       await cleaner.cleanTrash();
 
-      assert(client.deleteEmails.notCalled);
+      sinon.assert.notCalled(client.deleteEmails);
     });
 
     it('succeeds when there are no emails', async () => {
       client.getUnreadEmails.returns([]);
 
       let cleaner = new TrashCleaner(client, [{
-        val: "apple", labels: ["inbox"]
+        value: 'apple', labels: ['inbox']
       }])
 
       await cleaner.cleanTrash();
 
-      assert(client.deleteEmails.notCalled);
+      sinon.assert.notCalled(client.deleteEmails);
     });
 
     it('is case insensitive', async () => {
@@ -98,29 +133,29 @@ describe('TrashCleaner', () => {
         email.labels = [data.emailLabel];
 
         let cleaner = new TrashCleaner(client, [{
-          val: data.keyword, labels: [data.label]
+          value: data.keyword, labels: [data.label]
         }])
 
         await cleaner.cleanTrash();
 
-        assert(client.deleteEmails.calledWith([email]));
+        sinon.assert.calledWith(client.deleteEmails, [email]);
 
         client.deleteEmails.reset();
       }
     });
 
-    ["from", "subject", "snippet", "body"].forEach(field =>
-      it(`finds spam in "${field}" field`, async () => {
+    ['from', 'subject', 'snippet', 'body'].forEach(field =>
+      it(`finds spam in '${field}' field`, async () => {
         email[field] = 'apple';
-        email.labels = ["spam"];
+        email.labels = ['spam'];
 
         let cleaner = new TrashCleaner(client, [{
-          val: "apple", labels: ["spam"]
+          value: 'apple', labels: ['spam']
         }])
 
         await cleaner.cleanTrash();
 
-        assert(client.deleteEmails.calledWith([email]));
+        sinon.assert.calledWith(client.deleteEmails, [email]);
       }));
   });
 });
