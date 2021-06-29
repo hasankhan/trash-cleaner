@@ -1,4 +1,8 @@
-const { TrashCleanerFactory } = require('./trash-cleaner');
+const path = require('path');
+
+const { TrashCleanerFactory } = require('./lib/trash-cleaner');
+
+const PATH_CONFIG = path.join(__dirname, 'config');
 
 /**
  * Responds to any HTTP request.
@@ -18,7 +22,7 @@ exports.main = (req, res) => {
  * Entry point of the program encapsulated in a function to allow usage of await.
  */
 async function main() {
-    let trashCleaner = await new TrashCleanerFactory().getInstance();
+    let trashCleaner = await new TrashCleanerFactory(PATH_CONFIG).getInstance();
     await trashCleaner.cleanTrash();
 }
 
