@@ -43,7 +43,7 @@ class EmailClientFactory {
      * 
      * @returns {EmailClient} The Gmail client. 
      */
-     getClient() {
+     getInstance() {
      }
 }
 

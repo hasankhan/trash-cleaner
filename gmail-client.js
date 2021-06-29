@@ -138,7 +138,7 @@ class GmailClientFactory extends EmailClientFactory {
      * 
      * @returns {GmailClient} The Gmail client. 
      */
-    async getClient() {
+    async getInstance() {
         var auth;
         try {
             let content = fs.readFileSync(PATH_CREDENTIALS);

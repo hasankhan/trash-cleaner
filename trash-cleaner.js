@@ -1,5 +1,13 @@
-const { Email, EmailClient } = require('./email-client');
 const diacriticLess = require('diacriticless');
+const fs = require('fs');
+const path = require('path');
+
+const { Email, EmailClient } = require('./email-client');
+const { GmailClientFactory } = require('./gmail-client');
+
+// The file keywords.json stores the keywords and labels to use when finding
+// trash email.
+const PATH_KEYWORDS = path.join(__dirname, 'keywords.json');
 
 /**
  * An object that can clean trash emails from the mailbox.
@@ -137,4 +145,21 @@ class TrashCleaner {
     }
 }
 
-module.exports = { TrashCleaner }
+/**
+ * Factory for TrashCleaner objects.
+ */
+ class TrashCleanerFactory {
+    /**
+     * Creates an instance of TrashCleaner.
+     * 
+     * @returns {TrashCleaner} The TrashCleaner instance. 
+     */
+     async getInstance() {
+        let client = await new GmailClientFactory().getInstance();
+        let keywords = JSON.parse(fs.readFileSync(PATH_KEYWORDS));
+        let cleaner = new TrashCleaner(client, keywords);
+        return cleaner;
+     }
+}
+
+module.exports = { TrashCleaner, TrashCleanerFactory }
