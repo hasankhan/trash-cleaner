@@ -20,6 +20,19 @@ describe('TrashCleaner', () => {
   });
 
   describe('cleanTrash', () => {
+    it('uses regex', async () => {
+      email.body = 'orange';
+      email.labels = ["spam"];
+
+      let cleaner = new TrashCleaner(client, [{
+        val: "mango|apple|orange", labels: ["spam"]
+      }])
+
+      await cleaner.cleanTrash();
+
+      assert(client.deleteEmails.calledWith([email]));
+    });
+
     it('finds spam with diacritics', async () => {
       email.body = 'Ápplé';
       email.labels = ["spam"];
