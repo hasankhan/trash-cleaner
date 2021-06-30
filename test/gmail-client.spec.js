@@ -12,7 +12,7 @@ describe('GmailCilent', () => {
     });
 
     after(() => {
-    console.log.restore();
+        console.log.restore();
     });
 
     beforeEach(() => {
