@@ -7,6 +7,14 @@ const { Email } = require('../lib/email-client');
 describe('GmailCilent', () => {
     var gmail, client;
 
+    before(() => {
+        sinon.stub(console, 'log');
+    });
+
+    after(() => {
+    console.log.restore();
+    });
+
     beforeEach(() => {
         gmail = {
             users: {

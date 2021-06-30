@@ -1,7 +1,7 @@
 [
-    { "val": ".", "labels": ["trash"] },
-    { "val": "your credit", "labels": ["spam"] },
-    { "val": "casino", "labels": ["*"] },
-    { "val": "lucky winner", "labels": ["spam"] },
-    { "val": "pharma", "labels": ["spam"] }
+    { "value": ".", "fields": "*", "labels": "trash" },
+    { "value": "credit", "fields": "subject", "labels": "spam" },
+    { "value": "casino", "fields": "*", "labels": "*" },
+    { "value": "lucky|winner", "fields": "body", "labels": "spam" },
+    { "value": "pharma", "fields": "subject,snippet", "labels": "spam" }
 ]

@@ -7,16 +7,21 @@ const { TrashKeyword, TrashCleaner } = require('../lib/trash-cleaner');
 describe('TrashKeyword', ()=> {
   describe('constructor', ()=>{
     it('throws when value is not set', ()=> {
-      assert.throws(() => new TrashKeyword(null, ["spam"]), /Invalid keyword/);
+      assert.throws(() => new TrashKeyword(null, ['*'], ['spam']), /Invalid keyword/);
     }) 
 
+    it('throws when fields are not set', ()=> {
+      assert.throws(() => new TrashKeyword('apple', null, ['*']), /Invalid keyword/);
+      assert.throws(() => new TrashKeyword('apple', [], ['*']), /Invalid keyword/);
+    })
+
     it('throws when labels are not set', ()=> {
-      assert.throws(() => new TrashKeyword("apple", null), /Invalid keyword/);
-      assert.throws(() => new TrashKeyword("apple", []), /Invalid keyword/);
+      assert.throws(() => new TrashKeyword('apple', ['*'], null), /Invalid keyword/);
+      assert.throws(() => new TrashKeyword('apple', ['*'], []), /Invalid keyword/);
     })
 
     it('does not throw when value and labels are set', ()=> {
-      assert.doesNotThrow(() => new TrashKeyword("apple", ["spam"]));
+      assert.doesNotThrow(() => new TrashKeyword('apple', ['*'], ['spam']));
     })
   })
 });
@@ -42,25 +47,30 @@ describe('TrashCleaner', () => {
   });
 
   describe('cleanTrash', () => {
-    it('does not delete email that does not match', async() => {
+    [
+      {match: 'keyword', value: 'orange', fields: ['*'], labels: ['spam']},
+      {match: 'field', value: 'apple', fields: ['subject'], labels: ['spam']},
+      {match: 'label', value: 'apple', fields: ['*'], labels: ['inbox']},
+    ].forEach(data =>
+    it(`does not find spam when ${data.match} does not match`, async() => {
       email.body = 'apple';
       email.labels = ['spam'];
 
       let cleaner = new TrashCleaner(client, [{
-        value: 'orange', labels: ['spam']
+        value: data.value, fields: data.fields, labels: data.labels
       }])
 
       await cleaner.cleanTrash();
 
       sinon.assert.notCalled(client.deleteEmails);
-    });
+    }));
 
     it('uses regex', async () => {
       email.body = 'orange';
       email.labels = ['spam'];
 
       let cleaner = new TrashCleaner(client, [{
-        value: 'mango|apple|orange', labels: ['spam']
+        value: 'mango|apple|orange', fields: ['*'], labels: ['spam']
       }])
 
       await cleaner.cleanTrash();
@@ -73,7 +83,7 @@ describe('TrashCleaner', () => {
       email.labels = ['spam'];
 
       let cleaner = new TrashCleaner(client, [{
-        value: 'apple', labels: ['spam']
+        value: 'apple', fields: ['*'], labels: ['spam']
       }])
 
       await cleaner.cleanTrash();
@@ -86,7 +96,7 @@ describe('TrashCleaner', () => {
       email.labels = ['spam'];
 
       let cleaner = new TrashCleaner(client, [{
-        value: 'apple', labels: ['*']
+        value: 'apple', fields: ['*'], labels: ['*']
       }])
 
       await cleaner.cleanTrash();
@@ -94,24 +104,11 @@ describe('TrashCleaner', () => {
       sinon.assert.calledWith(client.deleteEmails, [email]);
     });
 
-    it('does not find spam when label does not match', async () => {
-      email.body = 'apple';
-      email.labels = ['spam'];
-
-      let cleaner = new TrashCleaner(client, [{
-        value: 'apple', labels: ['inbox']
-      }])
-
-      await cleaner.cleanTrash();
-
-      sinon.assert.notCalled(client.deleteEmails);
-    });
-
     it('succeeds when there are no emails', async () => {
       client.getUnreadEmails.returns([]);
 
       let cleaner = new TrashCleaner(client, [{
-        value: 'apple', labels: ['inbox']
+        value: 'apple', fields: ['*'], labels: ['inbox']
       }])
 
       await cleaner.cleanTrash();
@@ -133,7 +130,7 @@ describe('TrashCleaner', () => {
         email.labels = [data.emailLabel];
 
         let cleaner = new TrashCleaner(client, [{
-          value: data.keyword, labels: [data.label]
+          value: data.keyword, fields: ['*'], labels: [data.label]
         }])
 
         await cleaner.cleanTrash();
@@ -145,12 +142,12 @@ describe('TrashCleaner', () => {
     });
 
     ['from', 'subject', 'snippet', 'body'].forEach(field =>
-      it(`finds spam in '${field}' field`, async () => {
+      it(`finds spam in ${field} field`, async () => {
         email[field] = 'apple';
         email.labels = ['spam'];
 
         let cleaner = new TrashCleaner(client, [{
-          value: 'apple', labels: ['spam']
+          value: 'apple', fields: [field], labels: ['spam']
         }])
 
         await cleaner.cleanTrash();
