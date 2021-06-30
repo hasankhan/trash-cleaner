@@ -3,3 +3,4 @@ credentials.json
 token.json
 keywords.json
 .vscode
+.nyc_output
