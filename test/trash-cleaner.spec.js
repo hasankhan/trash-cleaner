@@ -1,6 +1,6 @@
-const assert = require('assert');
 const sinon = require('sinon');
 
+const { assert } = require('chai');
 const { Email } = require('../lib/email-client');
 const { TrashKeyword, TrashCleaner } = require('../lib/trash-cleaner');
 
@@ -8,7 +8,7 @@ describe('TrashKeyword', ()=> {
   describe('constructor', ()=>{
     it('throws when value is not set', ()=> {
       assert.throws(() => new TrashKeyword(null, ["spam"]), /Invalid keyword/);
-    })
+    }) 
 
     it('throws when labels are not set', ()=> {
       assert.throws(() => new TrashKeyword("apple", null), /Invalid keyword/);
