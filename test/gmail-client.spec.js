@@ -43,12 +43,12 @@ describe('GmailCilent', () => {
         });
 
         it('returns email when there is a message', async () => {
-            response.data.messages = ["123"];
+            response.data.messages = ['123'];
             gmail.users.messages.get.returns({
                 data: {
-                    id: "123",
-                    labelIds: ["trash"],
-                    snippet: "snippet",
+                    id: '123',
+                    labelIds: ['trash'],
+                    snippet: 'snippet',
                     payload: {
                         headers: [
                             { name: 'Subject', value: 'subject' },
@@ -64,19 +64,19 @@ describe('GmailCilent', () => {
             let emails = await client.getUnreadEmails();
 
             let email = new Email();
-            email.id = "123";
-            email.from = "spammer";
-            email.labels = ["trash"];
-            email.snippet = "snippet";
-            email.subject = "subject";
-            email.body = "spam";
+            email.id = '123';
+            email.from = 'spammer';
+            email.labels = ['trash'];
+            email.snippet = 'snippet';
+            email.subject = 'subject';
+            email.body = 'spam';
 
             assert.deepEqual(emails, [email]);
         });
     });
 
-    describe("deleteEmails", () => {
-        it("throws when fails", (done) => {
+    describe('deleteEmails', () => {
+        it('throws when fails', (done) => {
             gmail.users.messages.batchDelete.returns(Promise.reject(Error('test')));
 
             client.deleteEmails([])
@@ -88,10 +88,10 @@ describe('GmailCilent', () => {
                 });
         });
 
-        it("sends email ids", async () => {
+        it('sends email ids', async () => {
             gmail.users.messages.batchDelete.returns(Promise.resolve());
 
-            await client.deleteEmails([{ id: "123" }])
+            await client.deleteEmails([{ id: '123' }])
 
             let args = { userId: 'me', ids: ['123'] };
             sinon.assert.calledWith(gmail.users.messages.batchDelete, args);

@@ -13,9 +13,9 @@ const PATH_CONFIG = path.join(__dirname, 'config');
  */
 exports.main = (req, res) => {
     main().then(() => {
-        res.status(200).send("ok");
+        res.status(200).send('ok');
     }).catch(() => {
-        res.status(500).send("error");
+        res.status(500).send('error');
     });
 };
 
@@ -31,6 +31,6 @@ async function main() {
 const isRunningInGoogleCloud = !!process.env.GCP_PROJECT
 if (!isRunningInGoogleCloud) {
     main().catch(err => {
-        console.error("An error occurred:", err);
+        console.error('An error occurred:', err);
     });
 }
