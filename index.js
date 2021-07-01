@@ -1,4 +1,5 @@
 const path = require('path');
+const { FileSystemConfigStore } = require('./lib/config-store');
 
 const { TrashCleanerFactory } = require('./lib/trash-cleaner');
 
@@ -22,7 +23,8 @@ exports.main = (req, res) => {
  * Entry point of the program encapsulated in a function to allow usage of await.
  */
 async function main() {
-    let trashCleaner = await new TrashCleanerFactory(PATH_CONFIG).getInstance();
+    let configStore = new FileSystemConfigStore(PATH_CONFIG);
+    let trashCleaner = await new TrashCleanerFactory(configStore).getInstance();
     await trashCleaner.cleanTrash();
 }
 
