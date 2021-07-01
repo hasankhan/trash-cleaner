@@ -4,23 +4,21 @@ const { assert } = require('chai');
 const { Email } = require('../lib/email-client');
 const { TrashKeyword, TrashCleaner } = require('../lib/trash-cleaner');
 
-describe('TrashKeyword', ()=> {
-  describe('constructor', ()=>{
-    it('throws when value is not set', ()=> {
+describe('TrashKeyword', () => {
+  describe('constructor', () => {
+    it('throws when value is not set', () => {
       assert.throws(() => new TrashKeyword(null, ['*'], ['spam']), /Invalid keyword/);
-    }) 
+    })
 
-    it('throws when fields are not set', ()=> {
+    it('throws when fields are not set', () => {
       assert.throws(() => new TrashKeyword('apple', null, ['*']), /Invalid keyword/);
-      assert.throws(() => new TrashKeyword('apple', [], ['*']), /Invalid keyword/);
     })
 
-    it('throws when labels are not set', ()=> {
+    it('throws when labels are not set', () => {
       assert.throws(() => new TrashKeyword('apple', ['*'], null), /Invalid keyword/);
-      assert.throws(() => new TrashKeyword('apple', ['*'], []), /Invalid keyword/);
     })
 
-    it('does not throw when value and labels are set', ()=> {
+    it('does not throw when value and labels are set', () => {
       assert.doesNotThrow(() => new TrashKeyword('apple', ['*'], ['spam']));
     })
   })
@@ -48,22 +46,22 @@ describe('TrashCleaner', () => {
 
   describe('cleanTrash', () => {
     [
-      {match: 'keyword', value: 'orange', fields: ['*'], labels: ['spam']},
-      {match: 'field', value: 'apple', fields: ['subject'], labels: ['spam']},
-      {match: 'label', value: 'apple', fields: ['*'], labels: ['inbox']},
+      { match: 'keyword', value: 'orange', fields: ['*'], labels: ['spam'] },
+      { match: 'field', value: 'apple', fields: ['subject'], labels: ['spam'] },
+      { match: 'label', value: 'apple', fields: ['*'], labels: ['inbox'] },
     ].forEach(data =>
-    it(`does not find spam when ${data.match} does not match`, async() => {
-      email.body = 'apple';
-      email.labels = ['spam'];
+      it(`does not find spam when ${data.match} does not match`, async () => {
+        email.body = 'apple';
+        email.labels = ['spam'];
 
-      let cleaner = new TrashCleaner(client, [{
-        value: data.value, fields: data.fields, labels: data.labels
-      }])
+        let cleaner = new TrashCleaner(client, [{
+          value: data.value, fields: data.fields, labels: data.labels
+        }])
 
-      await cleaner.cleanTrash();
+        await cleaner.cleanTrash();
 
-      sinon.assert.notCalled(client.deleteEmails);
-    }));
+        sinon.assert.notCalled(client.deleteEmails);
+      }));
 
     it('uses regex', async () => {
       email.body = 'orange';
