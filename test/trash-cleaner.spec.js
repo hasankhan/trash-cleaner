@@ -2,7 +2,7 @@ const sinon = require('sinon');
 
 const { assert } = require('chai');
 const { Email } = require('../lib/email-client');
-const { TrashKeyword, TrashCleaner } = require('../lib/trash-cleaner');
+const { TrashKeyword, TrashCleaner, ProgressReporter } = require('../lib/trash-cleaner');
 
 describe('TrashKeyword', () => {
   describe('constructor', () => {
@@ -25,7 +25,7 @@ describe('TrashKeyword', () => {
 });
 
 describe('TrashCleaner', () => {
-  var client, email;
+  var client, email, reporter;
 
   before(() => {
     sinon.stub(console, 'log');
@@ -42,6 +42,8 @@ describe('TrashCleaner', () => {
       getUnreadEmails: sinon.stub().returns([email]),
       deleteEmails: sinon.stub()
     };
+
+    reporter = new ProgressReporter();
   });
 
   describe('cleanTrash', () => {
@@ -56,7 +58,7 @@ describe('TrashCleaner', () => {
 
         let cleaner = new TrashCleaner(client, [{
           value: data.value, fields: data.fields, labels: data.labels
-        }])
+        }], reporter)
 
         await cleaner.cleanTrash();
 
@@ -69,7 +71,7 @@ describe('TrashCleaner', () => {
 
       let cleaner = new TrashCleaner(client, [{
         value: 'mango|apple|orange', fields: ['*'], labels: ['spam']
-      }])
+      }], reporter)
 
       await cleaner.cleanTrash();
 
@@ -82,7 +84,7 @@ describe('TrashCleaner', () => {
 
       let cleaner = new TrashCleaner(client, [{
         value: 'apple', fields: ['*'], labels: ['spam']
-      }])
+      }], reporter)
 
       await cleaner.cleanTrash();
 
@@ -95,7 +97,7 @@ describe('TrashCleaner', () => {
 
       let cleaner = new TrashCleaner(client, [{
         value: 'apple', fields: ['*'], labels: ['*']
-      }])
+      }], reporter)
 
       await cleaner.cleanTrash();
 
@@ -107,7 +109,7 @@ describe('TrashCleaner', () => {
 
       let cleaner = new TrashCleaner(client, [{
         value: 'apple', fields: ['*'], labels: ['inbox']
-      }])
+      }], reporter)
 
       await cleaner.cleanTrash();
 
@@ -129,7 +131,7 @@ describe('TrashCleaner', () => {
 
         let cleaner = new TrashCleaner(client, [{
           value: data.keyword, fields: ['*'], labels: [data.label]
-        }])
+        }], reporter)
 
         await cleaner.cleanTrash();
 
@@ -146,7 +148,7 @@ describe('TrashCleaner', () => {
 
         let cleaner = new TrashCleaner(client, [{
           value: 'apple', fields: [field], labels: ['spam']
-        }])
+        }], reporter)
 
         await cleaner.cleanTrash();
 
