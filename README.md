@@ -1,6 +1,6 @@
 # Gmail Cleanup
 
-A script to delete all trash emails based on keyword and label filters.
+A program to delete trash emails based on keyword and label filters.
 
 ## Setup
 
