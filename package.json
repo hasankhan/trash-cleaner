@@ -1,8 +1,18 @@
 {
-  "name": "gmail-cleanup",
+  "name": "trash-cleaner",
   "version": "1.0.0",
-  "description": "Finds and deletes trash email in a Gmail account",
+  "description": "Finds and deletes trash email in the mailbox",
+  "tags": [
+    "email",
+    "spam"
+  ],
+  "keywords": [
+    "gmail",
+    "spam",
+    "cleanup"
+  ],
   "main": "index.js",
+  "preferGlobal": true,
   "dependencies": {
     "commander": "^8.0.0",
     "diacriticless": "^1.0.1",
@@ -16,9 +26,12 @@
     "sinon": "^11.1.1",
     "tmp": "^0.2.1"
   },
+  "bin": {
+    "trash-cleaner": "./bin/trash-cleaner"
+  },
   "scripts": {
     "test": "nyc mocha"
   },
   "author": "Muhammad Hasan Khan",
-  "license": "ISC"
+  "license": "MIT"
 }

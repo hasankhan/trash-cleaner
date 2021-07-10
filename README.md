@@ -1,4 +1,4 @@
-# Gmail Cleanup
+# Trash Cleaner
 
 A program to delete trash emails based on keyword and label filters.
 
@@ -14,7 +14,7 @@ A program to delete trash emails based on keyword and label filters.
 ## Options
 
 ```
-Usage: gmail-cleanup [options]
+Usage: trash-cleaner [options]
 
 Options:
   -V, --version               output the version number
