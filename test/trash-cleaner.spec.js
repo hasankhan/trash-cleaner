@@ -1,7 +1,7 @@
 const sinon = require('sinon');
 
 const { assert } = require('chai');
-const { Email } = require('../lib/email-client');
+const { Email } = require('../lib/client/email-client');
 const { ProgressReporter } = require('../lib/reporter/progress-reporter');
 const { TrashKeyword, TrashCleaner } = require('../lib/trash-cleaner');
 
