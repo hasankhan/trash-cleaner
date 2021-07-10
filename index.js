@@ -1,6 +1,5 @@
 const path = require('path');
-const { FileSystemConfigStore } = require('./lib/config-store');
-
+const { FileSystemConfigStore } = require('./lib/store/file-system-config-store');
 const { TrashCleanerFactory } = require('./lib/trash-cleaner');
 
 const PATH_CONFIG = path.join(__dirname, 'config');
