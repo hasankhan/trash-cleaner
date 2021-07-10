@@ -1,8 +1,8 @@
 const sinon = require('sinon');
 
 const { assert } = require('chai');
-const { GmailClient } = require('../lib/client/gmail-client');
-const { Email } = require('../lib/client/email-client');
+const { GmailClient } = require('../../lib/client/gmail-client');
+const { Email } = require('../../lib/client/email-client');
 
 describe('GmailCilent', () => {
     var gmail, client;

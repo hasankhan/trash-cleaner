@@ -3,7 +3,7 @@ const path = require('path');
 const tmp = require('tmp');
 
 const { assert } = require('chai');
-const { FileSystemConfigStore } = require("../lib/store/file-system-config-store");
+const { FileSystemConfigStore } = require("../../lib/store/file-system-config-store");
 
 const FILE_TEST = 'test.json';
 describe('FileSystemConfigStore', () => {
