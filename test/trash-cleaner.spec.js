@@ -2,7 +2,8 @@ const sinon = require('sinon');
 
 const { assert } = require('chai');
 const { Email } = require('../lib/email-client');
-const { TrashKeyword, TrashCleaner, ProgressReporter } = require('../lib/trash-cleaner');
+const { ProgressReporter } = require('../lib/progress-reporter');
+const { TrashKeyword, TrashCleaner } = require('../lib/trash-cleaner');
 
 describe('TrashKeyword', () => {
   describe('constructor', () => {
