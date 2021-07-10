@@ -17,7 +17,7 @@ In addition to the steps above, to run this script in Google Cloud automatically
 
 1. Create a [HTTP triggered Cloud Function](https://cloud.google.com/functions/docs/deploying/console).
 
-2. Copy `index.js`, `package.json`, `keywords.json`, `tokens.json`, and `credentials.json` to the Cloud Function.
+2. Copy source and config files to the Cloud Function.
 
 3. Create a [Cloud Scheduler Job with Authentication](https://cloud.google.com/scheduler/docs/http-target-auth#creating_a_scheduler_job_with_authentication).
 
