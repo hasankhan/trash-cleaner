@@ -1,4 +1,4 @@
-const { Cli } = require('./cli');
+const { Cli } = require('./lib/cli');
 
 (async function () {
     let cli = new Cli();
