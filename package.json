@@ -2,14 +2,10 @@
   "name": "trash-cleaner",
   "version": "1.0.0",
   "description": "Finds and deletes trash email in the mailbox",
-  "tags": [
-    "email",
-    "spam"
-  ],
   "keywords": [
     "gmail",
     "spam",
-    "cleanup"
+    "spam-filtering"
   ],
   "main": "index.js",
   "preferGlobal": true,
