@@ -33,6 +33,7 @@ Usage: trash-cleaner [options]
 
 Options:
   -V, --version               output the version number
+  -t, --dry-run               perform a dry-run cleanup without deleting the emails
   -d, --debug                 output extra debugging info
   -c, --configDirPath <path>  the path to config directory (default: "config")
   -s, --service <service>     the email service to use (choices: "gmail", "outlook", default: "gmail")
