@@ -13,6 +13,7 @@
     "commander": "^8.0.0",
     "diacriticless": "^1.0.1",
     "googleapis": "^77.0.0",
+    "open": "^8.2.1",
     "ora": "^5.4.1"
   },
   "devDependencies": {
