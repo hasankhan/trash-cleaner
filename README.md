@@ -20,9 +20,14 @@ cd trash-cleaner
 npm install -g
 ```
 
-## Configuration
+## Gmail Configuration
 1. Create a [Google Cloud Platform project with the API enabled](https://developers.google.com/workspace/guides/create-project).
-2. Create [Authorization credentials for a desktop application](https://developers.google.com/workspace/guides/create-credentials) and download `credentials.json` file in the `config` directory.
+2. Create [Authorization credentials for a desktop application](https://developers.google.com/workspace/guides/create-credentials) and download `gmail.credentials.json` file in the `config` directory.
+3. Rename `keywords.json.sample` file in the `config` directory to `keywords.json` and update its contents.
+
+## Outlook Configuration
+1. Register an application with the [Microsoft identity platform](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app).
+2. Rename `outlook.credentials.json.sample` file in the `config` directory to `outlook.credentials.json` and update its contents.
 3. Rename `keywords.json.sample` file in the `config` directory to `keywords.json` and update its contents.
 
 ## Get Started

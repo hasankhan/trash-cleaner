@@ -1,6 +1,8 @@
 node_modules/
-credentials.json
-token.json
+gmail.credentials.json
+gmail.token.json
+outlook.credentials.json
+outlook.token.json
 keywords.json
 .vscode
 .nyc_output

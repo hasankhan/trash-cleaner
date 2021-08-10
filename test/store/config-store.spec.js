@@ -30,7 +30,7 @@ describe('FileSystemConfigStore', () => {
             var store = new FileSystemConfigStore(configDirPath);
             fs.writeFileSync(path.join(configDirPath, FILE_TEST), '[3]');
 
-            let value = await store.get(FILE_TEST);
+            let value = await store.getJson(FILE_TEST);
 
             assert.deepEqual(value, [3]);
         });
@@ -38,7 +38,7 @@ describe('FileSystemConfigStore', () => {
         it('returns null when key does not exist', async () => {
             var store = new FileSystemConfigStore(configDirPath);
 
-            let value = await store.get(FILE_TEST + '.old');
+            let value = await store.getJson(FILE_TEST + '.old');
 
             assert.isNull(value);
         });
@@ -47,7 +47,7 @@ describe('FileSystemConfigStore', () => {
     describe('put', () => {
         it('saves value as json', async () => {
             var store = new FileSystemConfigStore(configDirPath);
-            await store.put(FILE_TEST, { val: 3 });
+            await store.putJson(FILE_TEST, { val: 3 });
 
             let value = fs.readFileSync(path.join(configDirPath, FILE_TEST), 'utf-8');
 
