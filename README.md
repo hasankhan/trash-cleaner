@@ -41,6 +41,7 @@ Options:
   -r, --reconfig              reconfigures the auth for a service
   -t, --dry-run               perform a dry-run cleanup without deleting the emails
   -d, --debug                 output extra debugging info
+  -l, --launch                launch the auth url in the browser
   -c, --configDirPath <path>  the path to config directory (default: "config")
   -s, --service <service>     the email service to use (choices: "gmail", "outlook", default: "gmail")
   -h, --help                  display help for command
