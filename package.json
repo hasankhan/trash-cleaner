@@ -32,7 +32,7 @@
     "trash-cleaner": "./bin/trash-cleaner"
   },
   "scripts": {
-    "test": "nyc mocha"
+    "test": "nyc mocha --recursive"
   },
   "author": "Muhammad Hasan Khan",
   "license": "MIT"

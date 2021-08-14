@@ -4,5 +4,6 @@ gmail.token.json
 outlook.credentials.json
 outlook.token.json
 keywords.json
+.vs
 .vscode
 .nyc_output
