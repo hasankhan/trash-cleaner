@@ -6,6 +6,7 @@ const { assert } = require('chai');
 const { FileSystemConfigStore } = require('../../lib/store/file-system-config-store');
 
 const FILE_TEST = 'test.json';
+
 describe('FileSystemConfigStore', () => {
     var configDirPath, cleanupDir;
 
