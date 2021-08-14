@@ -119,6 +119,7 @@ describe('ConsoleProgressReporter', () => {
             let mock = sinon.mock(reporter);
             mock.expects('_log').withArgs('Total no. of unread emails: 3');
             mock.expects('_log').withArgs('Total no. of trash emails: 1');
+            mock.expects('_log').withArgs('');
             mock.expects('_log').withArgs('Emails not deleted in dry-run mode.');
 
             sinon.stub(reporter._spinner, 'stop');
@@ -129,7 +130,6 @@ describe('ConsoleProgressReporter', () => {
             mock.expects('_log').withArgs('Snippet: the snippet');
             mock.expects('_log').withArgs('Body: the body');
             mock.expects('_log').withArgs('-'.repeat(60));
-            mock.expects('_log');
 
             reporter.onStop();
 

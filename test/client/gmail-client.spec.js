@@ -55,6 +55,7 @@ describe('GmailCilent', () => {
                             { name: 'From', value: 'spammer' }
                         ],
                         body: {
+                            size: 4,
                             data: 'c3BhbQ=='
                         }
                     }
@@ -72,6 +73,36 @@ describe('GmailCilent', () => {
             email.body = 'spam';
 
             assert.deepEqual(emails, [email]);
+        });
+
+        it('can read body in parts', async () => {
+            response.data.messages = ['123'];
+            gmail.users.messages.get.returns({
+                data: {
+                    id: '123',
+                    labelIds: ['trash'],
+                    snippet: 'snippet',
+                    payload: {
+                        headers: [
+                            { name: 'Subject', value: 'subject' },
+                            { name: 'From', value: 'spammer' }
+                        ],
+                        parts: [
+                            {
+                                body: {
+                                    size: 4,
+                                    data: 'c3BhbQ=='
+                                },
+                            }
+                        ]
+                    }
+                }
+            });
+
+            let emails = await client.getUnreadEmails();
+
+            assert.equal(emails.length, 1);
+            assert.deepEqual(emails[0].body, 'spam');
         });
     });
 
