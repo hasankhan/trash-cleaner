@@ -117,12 +117,6 @@ describe('ConsoleProgressReporter', () => {
             reporter.onUnreadEmailsRetrieved(new Array(3));
 
             let mock = sinon.mock(reporter);
-            mock.expects('_log').withArgs('Total no. of unread emails: 3');
-            mock.expects('_log').withArgs('Total no. of trash emails: 1');
-            mock.expects('_log').withArgs('');
-            mock.expects('_log').withArgs('Emails not deleted in dry-run mode.');
-
-            sinon.stub(reporter._spinner, 'stop');
 
             mock.expects('_log').withArgs('From: sender');
             mock.expects('_log').withArgs('Labels: inbox');
@@ -131,6 +125,12 @@ describe('ConsoleProgressReporter', () => {
             mock.expects('_log').withArgs('Body: the body');
             mock.expects('_log').withArgs('-'.repeat(60));
 
+            mock.expects('_log').withArgs('Total no. of unread emails: 3');
+            mock.expects('_log').withArgs('Total no. of trash emails: 1');
+            mock.expects('_log').withArgs('');
+            mock.expects('_log').withArgs('Emails not deleted in dry-run mode.');
+
+            sinon.stub(reporter._spinner, 'stop');
             reporter.onStop();
 
             mock.verify();
