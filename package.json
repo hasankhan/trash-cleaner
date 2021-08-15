@@ -1,6 +1,6 @@
 {
   "name": "trash-cleaner",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Finds and deletes trash email in the mailbox",
   "keywords": [
     "gmail",
