@@ -7,7 +7,8 @@ describe('ConsoleProgressReporter', () => {
     var reporter;
 
     beforeEach(() => {
-        reporter = new ConsoleProgressReporter(true /*cliMode*/)
+        reporter = new ConsoleProgressReporter(true /*cliMode*/);
+        sinon.stub(reporter, '_log');
     });
 
     describe('onStart', () => {
@@ -85,10 +86,6 @@ describe('ConsoleProgressReporter', () => {
     });
 
     describe('onStop', () => {
-        before(() => {
-            sinon.stub(reporter, '_log');
-        });
-
         it('stops the spinner', () => {
             let mock = sinon.mock(reporter._spinner);
             mock.expects('stop').once();
@@ -117,6 +114,7 @@ describe('ConsoleProgressReporter', () => {
             reporter.onUnreadEmailsRetrieved(new Array(3));
 
             let mock = sinon.mock(reporter);
+            reporter._log.restore(); // remove the stub
 
             mock.expects('_log').withArgs('From: sender');
             mock.expects('_log').withArgs('Labels: inbox');
