@@ -1,7 +1,7 @@
 const sinon = require('sinon');
 
 const { assert } = require('chai');
-const { GmailClient } = require('../../lib/client/gmail-client');
+const { GmailClient, GmailClientFactory } = require('../../lib/client/gmail-client');
 const { Email } = require('../../lib/client/email-client');
 
 describe('GmailCilent', () => {
@@ -169,6 +169,28 @@ describe('GmailCilent', () => {
             } catch (err) {
                 assert.match(err.message, /Failed to mark messages as read/);
             }
+        });
+    });
+});
+
+describe('GmailClientFactory', () => {
+    describe('multi-account file names', () => {
+        it('uses default file names when no account specified', () => {
+            const factory = new GmailClientFactory({});
+            assert.equal(factory._credentialsFile, 'gmail.credentials.json');
+            assert.equal(factory._tokenFile, 'gmail.token.json');
+        });
+
+        it('uses default file names for "default" account', () => {
+            const factory = new GmailClientFactory({}, 'default');
+            assert.equal(factory._credentialsFile, 'gmail.credentials.json');
+            assert.equal(factory._tokenFile, 'gmail.token.json');
+        });
+
+        it('uses account-specific file names for named account', () => {
+            const factory = new GmailClientFactory({}, 'work');
+            assert.equal(factory._credentialsFile, 'gmail.credentials.work.json');
+            assert.equal(factory._tokenFile, 'gmail.token.work.json');
         });
     });
 });

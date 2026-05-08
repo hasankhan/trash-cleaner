@@ -1,7 +1,7 @@
 const sinon = require('sinon');
 
 const { assert } = require('chai');
-const { OutlookClient } = require('../../lib/client/outlook-client');
+const { OutlookClient, OutlookClientFactory } = require('../../lib/client/outlook-client');
 const { Email } = require('../../lib/client/email-client');
 
 describe('OutlookCilent', () => {
@@ -170,6 +170,28 @@ describe('OutlookCilent', () => {
             } catch (err) {
                 assert.match(err.message, /Failed to mark messages as read/);
             }
+        });
+    });
+});
+
+describe('OutlookClientFactory', () => {
+    describe('multi-account file names', () => {
+        it('uses default file names when no account specified', () => {
+            const factory = new OutlookClientFactory({});
+            assert.equal(factory._credentialsFile, 'outlook.credentials.json');
+            assert.equal(factory._tokenFile, 'outlook.token.json');
+        });
+
+        it('uses default file names for "default" account', () => {
+            const factory = new OutlookClientFactory({}, 'default');
+            assert.equal(factory._credentialsFile, 'outlook.credentials.json');
+            assert.equal(factory._tokenFile, 'outlook.token.json');
+        });
+
+        it('uses account-specific file names for named account', () => {
+            const factory = new OutlookClientFactory({}, 'work');
+            assert.equal(factory._credentialsFile, 'outlook.credentials.work.json');
+            assert.equal(factory._tokenFile, 'outlook.token.work.json');
         });
     });
 });
