@@ -97,7 +97,7 @@ describe('ConsoleProgressReporter', () => {
             mock.verify();
         });
 
-        it('logs trash emails', () => {
+        it('logs trash emails with action', () => {
             sinon.stub(reporter._spinner, 'start');
             reporter.onStart(true /*dryRun*/);
 
@@ -110,28 +110,63 @@ describe('ConsoleProgressReporter', () => {
             email.subject = 'the subject';
             email.from = 'sender';
             email.body = 'the body';
+            email._action = 'delete';
             reporter.onTrashEmailsIdentified([email]);
             reporter.onUnreadEmailsRetrieved(new Array(3));
 
-            const mock = sinon.mock(reporter);
+            sinon.stub(reporter._spinner, 'stop');
             reporter._log.restore(); // remove the stub
 
+            const mock = sinon.mock(reporter);
+            mock.expects('_log').withArgs('Action: delete');
             mock.expects('_log').withArgs('From: sender');
             mock.expects('_log').withArgs('Labels: inbox');
             mock.expects('_log').withArgs('Subject: the subject');
             mock.expects('_log').withArgs('Snippet: the snippet');
-            mock.expects('_log').withArgs('Body: the body');
             mock.expects('_log').withArgs('-'.repeat(60));
 
-            mock.expects('_log').withArgs('Total no. of unread emails: 3');
-            mock.expects('_log').withArgs('Total no. of trash emails: 1');
+            mock.expects('_log').withArgs(''); // before summary
+            mock.expects('_log').withArgs('Total unread emails: 3');
+            mock.expects('_log').withArgs('Total trash emails:  1');
             mock.expects('_log').withArgs('');
-            mock.expects('_log').withArgs('Emails not deleted in dry-run mode.');
+            mock.expects('_log').withArgs('Breakdown by action:');
+            mock.expects('_log').withArgs('  would be deleted: 1');
+            mock.expects('_log').withArgs('');
+            mock.expects('_log').withArgs('Dry-run mode: no actions were performed.');
 
-            sinon.stub(reporter._spinner, 'stop');
             reporter.onStop();
 
             mock.verify();
+        });
+
+        it('shows action breakdown with multiple actions', () => {
+            sinon.stub(reporter._spinner, 'start');
+            reporter.onStart(false /*dryRun*/);
+            sinon.stub(reporter, '_update');
+
+            const email1 = new Email();
+            email1._action = 'delete';
+            email1.labels = ['spam'];
+            const email2 = new Email();
+            email2._action = 'archive';
+            email2.labels = ['inbox'];
+            const email3 = new Email();
+            email3._action = 'archive';
+            email3.labels = ['inbox'];
+
+            reporter.onTrashEmailsIdentified([email1, email2, email3]);
+            reporter.onUnreadEmailsRetrieved(new Array(5));
+
+            sinon.stub(reporter._spinner, 'stop');
+
+            reporter.onStop();
+
+            // _log is already stubbed, check its calls
+            const logCalls = reporter._log.args.map(a => a[0]);
+            assert.isTrue(logCalls.includes('  deleted: 1'));
+            assert.isTrue(logCalls.includes('  archived: 2'));
+            assert.isTrue(logCalls.includes('Breakdown by action:'));
+            assert.isFalse(logCalls.some(msg => msg && msg.includes('Dry-run')));
         });
     });
 });
