@@ -5,6 +5,7 @@ outlook.credentials.json
 outlook.token.json
 keywords.json
 allowlist.json
+action-log.json
 .vs
 .vscode
 .nyc_output

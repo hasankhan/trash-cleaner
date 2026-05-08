@@ -220,4 +220,41 @@ describe('Cli', () => {
             assert.isTrue(logCalls.some(msg => msg && msg.includes('No trash emails')));
         });
     });
+
+    describe('undo', () => {
+        let tmpDir;
+
+        beforeEach(() => {
+            tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-undo-'));
+        });
+
+        afterEach(() => {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        });
+
+        it('reports no actions to undo when log is empty', async () => {
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            const result = await cli.run(['node', 'trash-cleaner', 'undo', tmpDir]);
+
+            assert.isTrue(result);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('No actions to undo')));
+        });
+
+        it('shows last batch and cancels on decline', async () => {
+            const { ActionLog } = require('../lib/utils/action-log');
+            const log = new ActionLog(tmpDir);
+            log.record([{ id: '1', action: 'delete', from: 'spam@x.com', subject: 'Junk' }]);
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            sandbox.stub(cli, '_confirm').resolves(false);
+            const result = await cli.run(['node', 'trash-cleaner', 'undo', tmpDir]);
+
+            assert.isTrue(result);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('Cancelled')));
+        });
+    });
 });
