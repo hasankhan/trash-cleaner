@@ -66,11 +66,11 @@ describe('retry', () => {
         fn.onThirdCall().resolves('done');
 
         const start = Date.now();
-        await retry(fn, { baseDelay: 50, maxRetries: 3 });
+        await retry(fn, { baseDelay: 10, maxRetries: 3 });
         const elapsed = Date.now() - start;
 
-        // baseDelay * 2^0 + baseDelay * 2^1 = 50 + 100 = 150ms minimum
-        assert.isAtLeast(elapsed, 100);
+        // baseDelay * 2^0 + baseDelay * 2^1 = 10 + 20 = 30ms minimum
+        assert.isAtLeast(elapsed, 20);
     });
 });
 

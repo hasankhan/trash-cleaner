@@ -306,6 +306,51 @@ describe('TrashCleaner', () => {
       sinon.assert.calledWith(client.deleteEmails, [email]);
     });
   });
+
+  describe('error handling', () => {
+    it('throws when getUnreadEmails fails', async () => {
+      client.getUnreadEmails.rejects(new Error('API timeout'));
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'test', fields: ['*'], labels: ['*']
+      }], reporter);
+
+      try {
+        await cleaner.cleanTrash();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /Failed to get trash emails/);
+      }
+    });
+  });
+
+  describe('filterTrashEmails', () => {
+    it('returns matching emails without fetching', () => {
+      email.body = 'casino offer';
+      email.labels = ['spam'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter);
+
+      const result = cleaner.filterTrashEmails([email]);
+
+      assert.deepEqual(result, [email]);
+    });
+
+    it('normalizes diacritics before matching', () => {
+      email.body = 'cásìnó';
+      email.labels = ['spam'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter);
+
+      const result = cleaner.filterTrashEmails([email]);
+
+      assert.deepEqual(result, [email]);
+    });
+  });
 });
 
 describe('TrashCleanerFactory', () => {
