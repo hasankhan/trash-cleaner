@@ -169,4 +169,74 @@ describe('ConsoleProgressReporter', () => {
             assert.isFalse(logCalls.some(msg => msg && msg.includes('Dry-run')));
         });
     });
+
+    describe('quiet mode', () => {
+        let quietReporter;
+
+        beforeEach(() => {
+            quietReporter = new ConsoleProgressReporter(false, true /*quiet*/);
+            sinon.stub(quietReporter, '_log');
+        });
+
+        it('does not create spinner in quiet mode', () => {
+            assert.isUndefined(quietReporter._spinner);
+        });
+
+        it('suppresses per-email output in quiet mode', () => {
+            quietReporter.onStart(false);
+
+            const email = new Email();
+            email._action = 'delete';
+            email.labels = ['spam'];
+            email.from = 'sender@test.com';
+            email.subject = 'spam subject';
+            email.snippet = 'spam snippet';
+
+            quietReporter.onTrashEmailsIdentified([email]);
+            quietReporter.onUnreadEmailsRetrieved(new Array(3));
+            quietReporter.onStop();
+
+            const logCalls = quietReporter._log.args.map(a => a[0]);
+            assert.isFalse(logCalls.some(msg => msg && msg.includes('From:')));
+            assert.isFalse(logCalls.some(msg => msg && msg.includes('Subject:')));
+        });
+
+        it('outputs single-line summary in quiet mode', () => {
+            quietReporter.onStart(false);
+
+            const email = new Email();
+            email._action = 'delete';
+            email.labels = ['spam'];
+            quietReporter.onTrashEmailsIdentified([email]);
+            quietReporter.onUnreadEmailsRetrieved(new Array(5));
+            quietReporter.onStop();
+
+            const logCalls = quietReporter._log.args.map(a => a[0]);
+            assert.isTrue(logCalls.includes('Processed 1 trash emails out of 5 unread'));
+        });
+
+        it('shows dry-run in quiet summary', () => {
+            quietReporter.onStart(true /*dryRun*/);
+
+            const email = new Email();
+            email._action = 'archive';
+            email.labels = ['inbox'];
+            quietReporter.onTrashEmailsIdentified([email]);
+            quietReporter.onUnreadEmailsRetrieved(new Array(10));
+            quietReporter.onStop();
+
+            const logCalls = quietReporter._log.args.map(a => a[0]);
+            assert.isTrue(logCalls.includes('Processed 1 trash emails out of 10 unread (dry-run)'));
+        });
+
+        it('outputs nothing when no trash found in quiet mode', () => {
+            quietReporter.onStart(false);
+            quietReporter.onTrashEmailsIdentified([]);
+            quietReporter.onUnreadEmailsRetrieved(new Array(5));
+            quietReporter.onStop();
+
+            const logCalls = quietReporter._log.args.map(a => a[0]);
+            assert.isEmpty(logCalls);
+        });
+    });
 });
