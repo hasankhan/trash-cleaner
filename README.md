@@ -4,7 +4,7 @@ A program to delete trash emails based on keyword and label filters.
 
 ## Prerequisites
 
-[Node.js & npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+[Node.js & npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) (Node 18+)
 
 ## Installation 
 
@@ -51,10 +51,91 @@ Options:
   -t, --dry-run               perform a dry-run cleanup without deleting the emails
   -d, --debug                 output extra debugging info
   -l, --launch                launch the auth url in the browser
+  -q, --quiet                 suppress verbose output (for cron/scripts)
+  -i, --interactive           preview matches and confirm before acting
+  -f, --format <format>       output format: text or html (default: "text")
   -c, --configDirPath <path>  the path to config directory (default: "config")
   -s, --service <service>     the email service to use (choices: "gmail", "outlook", default: "gmail")
   -a, --account <name>        the account name for multi-account support (default: "default")
   -h, --help                  display help for command
+```
+
+## Commands
+
+### `trash-cleaner init [configDirPath]`
+Creates a config directory with sample configuration files.
+
+### `trash-cleaner list-rules [configDirPath]`
+Displays all active keyword rules and allowlist patterns.
+
+### `trash-cleaner undo [configDirPath]`
+Shows the last batch of processed emails and offers to restore them.
+
+## Features
+
+### Actions
+Each keyword rule can specify an action: `delete` (default), `archive`, or `mark-as-read`.
+
+```json
+[
+  { "value": "unsubscribe", "fields": "body", "labels": "promotions", "action": "archive" },
+  { "value": "newsletter", "fields": "*", "labels": "*", "action": "mark-as-read" }
+]
+```
+
+### Multi-Account Support
+Run against different accounts using the `-a` flag:
+
+```bash
+trash-cleaner -s gmail -a work
+trash-cleaner -s gmail -a personal
+```
+
+Each account stores its own credentials (e.g., `gmail.credentials.work.json`).
+
+### Sender Allowlist
+Create `config/allowlist.json` to protect specific senders from any actions:
+
+```json
+[
+  "boss@company\\.com",
+  ".*@important\\.org"
+]
+```
+
+Patterns are case-insensitive regular expressions matched against the sender.
+
+### Interactive Mode
+Use `--interactive` to preview matched emails before taking action:
+
+```bash
+trash-cleaner --interactive
+```
+
+### Quiet Mode
+Use `--quiet` for cron jobs or scripts — suppresses spinner and verbose output:
+
+```bash
+trash-cleaner --quiet
+```
+
+### HTML Reports
+Generate an HTML report instead of console output:
+
+```bash
+trash-cleaner --format html
+```
+
+This creates a timestamped HTML file in the current directory.
+
+### Retry Logic
+API calls automatically retry with exponential backoff on transient failures (429, 5xx, network errors).
+
+### Undo
+After processing, actions are logged. Use `trash-cleaner undo` to restore the last batch:
+
+```bash
+trash-cleaner undo
 ```
 
 ## Scheduling
@@ -66,7 +147,7 @@ To run trash-cleaner automatically on a schedule:
 Run `crontab -e` and add a line. For example, to run every hour:
 
 ```
-0 * * * * /usr/local/bin/trash-cleaner -c /path/to/config
+0 * * * * /usr/local/bin/trash-cleaner --quiet -c /path/to/config
 ```
 
 ### macOS (launchd)
@@ -83,6 +164,7 @@ Create `~/Library/LaunchAgents/com.trash-cleaner.plist`:
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/bin/trash-cleaner</string>
+        <string>--quiet</string>
         <string>-c</string>
         <string>/path/to/config</string>
     </array>
@@ -97,5 +179,15 @@ Load it with: `launchctl load ~/Library/LaunchAgents/com.trash-cleaner.plist`
 ### Windows (Task Scheduler)
 
 ```powershell
-schtasks /create /tn "TrashCleaner" /tr "trash-cleaner -c C:\path\to\config" /sc hourly
+schtasks /create /tn "TrashCleaner" /tr "trash-cleaner --quiet -c C:\path\to\config" /sc hourly
+```
+
+## Development
+
+```bash
+npm install        # Install dependencies
+npm test           # Run tests
+npm run lint       # Run ESLint
+npm run typecheck  # Run JSDoc type checking
+npm run coverage   # Generate coverage report
 ```
