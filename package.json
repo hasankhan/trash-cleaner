@@ -42,5 +42,11 @@
     "typecheck": "tsc --noEmit"
   },
   "author": "Muhammad Hasan Khan",
-  "license": "MIT"
+  "license": "MIT",
+  "overrides": {
+    "mocha": {
+      "diff": "^8.0.0",
+      "serialize-javascript": "^7.0.5"
+    }
+  }
 }
