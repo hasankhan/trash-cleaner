@@ -165,4 +165,59 @@ describe('Cli', () => {
             assert.isFalse(result);
         });
     });
+
+    describe('interactive mode', () => {
+        it('shows preview and processes on confirm', async () => {
+            const email = { id: '1', from: 'spam@test.com', subject: 'Win!', _action: 'delete', labels: ['spam'] };
+            const trashCleaner = {
+                findTrash: sinon.stub().resolves([email]),
+                processEmails: sinon.stub().resolves()
+            };
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            sandbox.stub(cli, '_confirm').resolves(true);
+
+            await cli._runInteractive(trashCleaner);
+
+            sinon.assert.calledOnce(trashCleaner.findTrash);
+            sinon.assert.calledWith(trashCleaner.processEmails, [email]);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('1 trash email')));
+        });
+
+        it('cancels when user declines', async () => {
+            const email = { id: '1', from: 'spam@test.com', subject: 'Win!', _action: 'delete', labels: ['spam'] };
+            const trashCleaner = {
+                findTrash: sinon.stub().resolves([email]),
+                processEmails: sinon.stub().resolves()
+            };
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            sandbox.stub(cli, '_confirm').resolves(false);
+
+            await cli._runInteractive(trashCleaner);
+
+            sinon.assert.notCalled(trashCleaner.processEmails);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('Cancelled')));
+        });
+
+        it('reports no trash found', async () => {
+            const trashCleaner = {
+                findTrash: sinon.stub().resolves([]),
+                processEmails: sinon.stub().resolves()
+            };
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+
+            await cli._runInteractive(trashCleaner);
+
+            sinon.assert.notCalled(trashCleaner.processEmails);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('No trash emails')));
+        });
+    });
 });
