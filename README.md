@@ -31,6 +31,15 @@ npm install -g
 3. Rename `keywords.json.sample` file in the `config` directory to `keywords.json` and update its contents.
 
 ## Get Started
+
+Initialize the config directory with sample files:
+
+```bash
+trash-cleaner init [configDirPath]
+```
+
+This creates starter `keywords.json`, `gmail.credentials.json`, and `outlook.credentials.json` files. Edit them to match your setup (see configuration sections above).
+
 To get the list of all parameters type `trash-cleaner -h`
 
 ```
