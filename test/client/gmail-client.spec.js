@@ -13,6 +13,7 @@ describe('GmailCilent', () => {
                 messages: {
                     list: sinon.stub(),
                     batchDelete: sinon.stub(),
+                    batchModify: sinon.stub(),
                     get: sinon.stub()
                 }
             }
@@ -118,6 +119,56 @@ describe('GmailCilent', () => {
 
             const args = { userId: 'me', ids: ['123'] };
             sinon.assert.calledWith(gmail.users.messages.batchDelete, args);
+        });
+    });
+
+    describe('archiveEmails', () => {
+        it('removes INBOX label', async () => {
+            gmail.users.messages.batchModify.returns(Promise.resolve());
+
+            await client.archiveEmails([{ id: '123' }]);
+
+            sinon.assert.calledWith(gmail.users.messages.batchModify, {
+                userId: 'me',
+                ids: ['123'],
+                removeLabelIds: ['INBOX']
+            });
+        });
+
+        it('throws when fails', async () => {
+            gmail.users.messages.batchModify.returns(Promise.reject(Error('test')));
+
+            try {
+                await client.archiveEmails([{ id: '123' }]);
+                assert.fail('should throw');
+            } catch (err) {
+                assert.match(err.message, /Failed to archive messages/);
+            }
+        });
+    });
+
+    describe('markAsReadEmails', () => {
+        it('removes UNREAD label', async () => {
+            gmail.users.messages.batchModify.returns(Promise.resolve());
+
+            await client.markAsReadEmails([{ id: '123' }]);
+
+            sinon.assert.calledWith(gmail.users.messages.batchModify, {
+                userId: 'me',
+                ids: ['123'],
+                removeLabelIds: ['UNREAD']
+            });
+        });
+
+        it('throws when fails', async () => {
+            gmail.users.messages.batchModify.returns(Promise.reject(Error('test')));
+
+            try {
+                await client.markAsReadEmails([{ id: '123' }]);
+                assert.fail('should throw');
+            } catch (err) {
+                assert.match(err.message, /Failed to mark messages as read/);
+            }
         });
     });
 });

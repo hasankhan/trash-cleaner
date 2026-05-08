@@ -3,5 +3,7 @@
     { "value": "credit", "fields": "subject", "labels": "spam,junk email" },
     { "value": "casino", "fields": "*", "labels": "*" },
     { "value": "lucky|winner", "fields": "body", "labels": "spam,junk email" },
-    { "value": "pharma", "fields": "subject,snippet", "labels": "spam,junk email" }
+    { "value": "pharma", "fields": "subject,snippet", "labels": "spam,junk email" },
+    { "value": "newsletter", "fields": "subject", "labels": "inbox", "action": "archive" },
+    { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" }
 ]

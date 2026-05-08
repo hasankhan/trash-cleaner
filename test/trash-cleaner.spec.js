@@ -22,6 +22,20 @@ describe('TrashKeyword', () => {
     it('does not throw when value and labels are set', () => {
       assert.doesNotThrow(() => new TrashKeyword('apple', ['*'], ['spam']));
     })
+
+    it('defaults action to delete', () => {
+      const keyword = new TrashKeyword('apple', ['*'], ['spam']);
+      assert.equal(keyword.action, 'delete');
+    })
+
+    it('accepts valid action', () => {
+      const keyword = new TrashKeyword('apple', ['*'], ['spam'], 'archive');
+      assert.equal(keyword.action, 'archive');
+    })
+
+    it('throws for invalid action', () => {
+      assert.throws(() => new TrashKeyword('apple', ['*'], ['spam'], 'invalid'), /Invalid action/);
+    })
   })
 });
 
@@ -41,7 +55,9 @@ describe('TrashCleaner', () => {
 
     client = {
       getUnreadEmails: sinon.stub().returns([email]),
-      deleteEmails: sinon.stub()
+      deleteEmails: sinon.stub(),
+      archiveEmails: sinon.stub(),
+      markAsReadEmails: sinon.stub()
     };
 
     reporter = new ProgressReporter();
@@ -155,6 +171,68 @@ describe('TrashCleaner', () => {
 
         sinon.assert.calledWith(client.deleteEmails, [email]);
       }));
+
+    it('archives emails when action is archive', async () => {
+      email.body = 'newsletter content';
+      email.labels = ['inbox'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'newsletter', fields: ['*'], labels: ['*'], action: 'archive'
+      }], reporter);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.calledWith(client.archiveEmails, [email]);
+      sinon.assert.notCalled(client.deleteEmails);
+    });
+
+    it('marks emails as read when action is mark-as-read', async () => {
+      email.body = 'notification update';
+      email.labels = ['inbox'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'notification', fields: ['*'], labels: ['*'], action: 'mark-as-read'
+      }], reporter);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.calledWith(client.markAsReadEmails, [email]);
+      sinon.assert.notCalled(client.deleteEmails);
+    });
+
+    it('groups emails by action and processes each group', async () => {
+      const email2 = new Email();
+      email.body = 'casino spam';
+      email.labels = ['spam'];
+      email2.body = 'newsletter digest';
+      email2.labels = ['inbox'];
+
+      client.getUnreadEmails.returns([email, email2]);
+
+      const cleaner = new TrashCleaner(client, [
+        { value: 'casino', fields: ['*'], labels: ['*'], action: 'delete' },
+        { value: 'newsletter', fields: ['*'], labels: ['*'], action: 'archive' }
+      ], reporter);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.calledWith(client.deleteEmails, [email]);
+      sinon.assert.calledWith(client.archiveEmails, [email2]);
+    });
+
+    it('does not execute actions in dry-run mode', async () => {
+      email.body = 'newsletter content';
+      email.labels = ['inbox'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'newsletter', fields: ['*'], labels: ['*'], action: 'archive'
+      }], reporter);
+
+      await cleaner.cleanTrash(true /*dryRun*/);
+
+      sinon.assert.notCalled(client.archiveEmails);
+      sinon.assert.notCalled(client.deleteEmails);
+    });
   });
 });
 

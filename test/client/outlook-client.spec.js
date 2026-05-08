@@ -118,4 +118,58 @@ describe('OutlookCilent', () => {
             mock.verify();
         });
     });
+
+    describe('archiveEmails', () => {
+        it('moves email to archive', async () => {
+            mock.expects('_callApi')
+                .withArgs(
+                    'post',
+                    'http://abc/v1.0/me/messages/123/move',
+                    'secret',
+                    { destinationId: 'archive' })
+                .returns(Promise.resolve());
+
+            await client.archiveEmails([{ id: '123' }]);
+
+            mock.verify();
+        });
+
+        it('throws when fails', async () => {
+            mock.expects('_callApi').returns(Promise.reject(Error('test')));
+
+            try {
+                await client.archiveEmails([{ id: '123' }]);
+                assert.fail('should throw');
+            } catch (err) {
+                assert.match(err.message, /Failed to archive messages/);
+            }
+        });
+    });
+
+    describe('markAsReadEmails', () => {
+        it('patches email as read', async () => {
+            mock.expects('_callApi')
+                .withArgs(
+                    'patch',
+                    'http://abc/v1.0/me/messages/123',
+                    'secret',
+                    { isRead: true })
+                .returns(Promise.resolve());
+
+            await client.markAsReadEmails([{ id: '123' }]);
+
+            mock.verify();
+        });
+
+        it('throws when fails', async () => {
+            mock.expects('_callApi').returns(Promise.reject(Error('test')));
+
+            try {
+                await client.markAsReadEmails([{ id: '123' }]);
+                assert.fail('should throw');
+            } catch (err) {
+                assert.match(err.message, /Failed to mark messages as read/);
+            }
+        });
+    });
 });
