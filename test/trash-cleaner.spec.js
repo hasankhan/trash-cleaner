@@ -3,7 +3,7 @@ const sinon = require('sinon');
 const { assert } = require('chai');
 const { Email } = require('../lib/client/email-client');
 const { ProgressReporter } = require('../lib/reporter/progress-reporter');
-const { TrashKeyword, TrashCleaner } = require('../lib/trash-cleaner');
+const { TrashKeyword, TrashCleaner, TrashCleanerFactory } = require('../lib/trash-cleaner');
 
 describe('TrashKeyword', () => {
   describe('constructor', () => {
@@ -155,5 +155,77 @@ describe('TrashCleaner', () => {
 
         sinon.assert.calledWith(client.deleteEmails, [email]);
       }));
+  });
+});
+
+describe('TrashCleanerFactory', () => {
+  describe('readKeywords', () => {
+    it('parses keywords from config store', async () => {
+      const configStore = {
+        getJson: sinon.stub().returns([
+          { value: 'casino', fields: 'subject,body', labels: 'spam' }
+        ])
+      };
+
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+      const keywords = await factory.readKeywords();
+
+      assert.equal(keywords.length, 1);
+      assert.equal(keywords[0].value, 'casino');
+      assert.deepEqual(keywords[0].fields, ['subject', 'body']);
+      assert.deepEqual(keywords[0].labels, ['spam']);
+    });
+
+    it('uses wildcard default when fields are missing', async () => {
+      const configStore = {
+        getJson: sinon.stub().returns([
+          { value: 'test' }
+        ])
+      };
+
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+      const keywords = await factory.readKeywords();
+
+      assert.deepEqual(keywords[0].fields, ['*']);
+      assert.deepEqual(keywords[0].labels, ['*']);
+    });
+  });
+
+  describe('splitAndTrim', () => {
+    it('splits comma-separated values', () => {
+      const factory = new TrashCleanerFactory({}, {}, false);
+      const result = factory.splitAndTrim('a, b, c', ',', '*');
+
+      assert.deepEqual(result, ['a', 'b', 'c']);
+    });
+
+    it('uses default when value is null', () => {
+      const factory = new TrashCleanerFactory({}, {}, false);
+      const result = factory.splitAndTrim(null, ',', '*');
+
+      assert.deepEqual(result, ['*']);
+    });
+
+    it('filters empty tokens', () => {
+      const factory = new TrashCleanerFactory({}, {}, false);
+      const result = factory.splitAndTrim('a,,b', ',', '*');
+
+      assert.deepEqual(result, ['a', 'b']);
+    });
+  });
+
+  describe('getInstance', () => {
+    it('returns a TrashCleaner instance', async () => {
+      const configStore = {
+        getJson: sinon.stub().returns([
+          { value: 'test', fields: '*', labels: 'spam' }
+        ])
+      };
+
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+      const cleaner = await factory.getInstance();
+
+      assert.instanceOf(cleaner, TrashCleaner);
+    });
   });
 });
