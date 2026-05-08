@@ -112,4 +112,57 @@ describe('Cli', () => {
             assert.isTrue(logCalls.some(msg => msg.includes('Next steps')));
         });
     });
+
+    describe('list-rules', () => {
+        let tmpDir;
+
+        beforeEach(() => {
+            tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trash-cleaner-rules-'));
+            sandbox.stub(console, 'log');
+        });
+
+        afterEach(() => {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        });
+
+        it('lists rules from keywords.json', async () => {
+            const keywords = [
+                { value: 'casino', fields: 'subject', labels: 'spam' },
+                { value: 'newsletter', fields: '*', labels: 'inbox', action: 'archive' }
+            ];
+            fs.writeFileSync(path.join(tmpDir, 'keywords.json'), JSON.stringify(keywords));
+
+            cli = new Cli();
+            const result = await cli.run(['node', 'trash-cleaner', 'list-rules', tmpDir]);
+
+            assert.isTrue(result);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg.includes('Total rules: 2')));
+            assert.isTrue(logCalls.some(msg => msg.includes('/casino/')));
+            assert.isTrue(logCalls.some(msg => msg.includes('Action: delete')));
+            assert.isTrue(logCalls.some(msg => msg.includes('Action: archive')));
+        });
+
+        it('shows allowlist when present', async () => {
+            const keywords = [{ value: 'test', fields: '*', labels: '*' }];
+            const allowlist = ['boss@example\\.com'];
+            fs.writeFileSync(path.join(tmpDir, 'keywords.json'), JSON.stringify(keywords));
+            fs.writeFileSync(path.join(tmpDir, 'allowlist.json'), JSON.stringify(allowlist));
+
+            cli = new Cli();
+            const result = await cli.run(['node', 'trash-cleaner', 'list-rules', tmpDir]);
+
+            assert.isTrue(result);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('Allowlist')));
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('boss@example')));
+        });
+
+        it('returns false for invalid config directory', async () => {
+            cli = new Cli();
+            const result = await cli.run(['node', 'trash-cleaner', 'list-rules', '/nonexistent']);
+
+            assert.isFalse(result);
+        });
+    });
 });
