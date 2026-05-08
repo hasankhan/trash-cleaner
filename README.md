@@ -54,6 +54,7 @@ Options:
   -q, --quiet                 suppress verbose output (for cron/scripts)
   -i, --interactive           preview matches and confirm before acting
   -f, --format <format>       output format: text or html (default: "text")
+  -m, --min-age <days>        only process emails older than N days
   -c, --configDirPath <path>  the path to config directory (default: "config")
   -s, --service <service>     the email service to use (choices: "gmail", "outlook", default: "gmail")
   -a, --account <name>        the account name for multi-account support (default: "default")
@@ -67,6 +68,9 @@ Creates a config directory with sample configuration files.
 
 ### `trash-cleaner list-rules [configDirPath]`
 Displays all active keyword rules and allowlist patterns.
+
+### `trash-cleaner validate [configDirPath]`
+Validates configuration files and reports any issues.
 
 ### `trash-cleaner undo [configDirPath]`
 Shows the last batch of processed emails and offers to restore them.
@@ -131,6 +135,20 @@ This creates a timestamped HTML file in the current directory.
 ### Retry Logic
 API calls automatically retry with exponential backoff on transient failures (429, 5xx, network errors).
 
+### Email Age Filter
+Only process emails older than a certain number of days:
+
+```bash
+trash-cleaner --min-age 7
+```
+
+### Config Validation
+Check your configuration files for errors before running:
+
+```bash
+trash-cleaner validate
+```
+
 ### Undo
 After processing, actions are logged. Use `trash-cleaner undo` to restore the last batch:
 
@@ -191,3 +209,15 @@ npm run lint       # Run ESLint
 npm run typecheck  # Run JSDoc type checking
 npm run coverage   # Generate coverage report
 ```
+
+## Releasing
+
+Releases are automated via GitHub Actions. To publish a new version:
+
+```bash
+npm version patch   # or minor, or major
+git push --follow-tags
+```
+
+This triggers the publish workflow which runs tests and publishes to npm.
+Requires `NPM_TOKEN` secret configured in the repository settings.
