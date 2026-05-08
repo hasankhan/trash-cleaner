@@ -307,6 +307,64 @@ describe('TrashCleaner', () => {
     });
   });
 
+  describe('minAge filter', () => {
+    it('skips emails newer than minAge', async () => {
+      email.body = 'casino offer';
+      email.labels = ['spam'];
+      email.date = new Date(); // now — too new
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter, [], null, 7);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.notCalled(client.deleteEmails);
+    });
+
+    it('includes emails older than minAge', async () => {
+      email.body = 'casino offer';
+      email.labels = ['spam'];
+      email.date = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter, [], null, 7);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.calledOnce(client.deleteEmails);
+    });
+
+    it('includes emails when minAge is not set', async () => {
+      email.body = 'casino offer';
+      email.labels = ['spam'];
+      email.date = new Date(); // now — but no age filter
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.calledOnce(client.deleteEmails);
+    });
+
+    it('includes emails with no date when minAge is set', async () => {
+      email.body = 'casino offer';
+      email.labels = ['spam'];
+      email.date = null;
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter, [], null, 7);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.calledOnce(client.deleteEmails);
+    });
+  });
+
   describe('error handling', () => {
     it('throws when getUnreadEmails fails', async () => {
       client.getUnreadEmails.rejects(new Error('API timeout'));
