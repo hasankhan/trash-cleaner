@@ -234,6 +234,78 @@ describe('TrashCleaner', () => {
       sinon.assert.notCalled(client.deleteEmails);
     });
   });
+
+  describe('allowlist', () => {
+    it('protects allowlisted sender from deletion', async () => {
+      email.body = 'casino spam';
+      email.from = 'boss@example.com';
+      email.labels = ['spam'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter, ['boss@example\\.com']);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.notCalled(client.deleteEmails);
+    });
+
+    it('allows non-allowlisted sender to be deleted', async () => {
+      email.body = 'casino spam';
+      email.from = 'spammer@evil.com';
+      email.labels = ['spam'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter, ['boss@example\\.com']);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.calledWith(client.deleteEmails, [email]);
+    });
+
+    it('allowlist patterns are case-insensitive', async () => {
+      email.body = 'promo offer';
+      email.from = 'BOSS@Example.COM';
+      email.labels = ['inbox'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'promo', fields: ['*'], labels: ['*']
+      }], reporter, ['boss@example\\.com']);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.notCalled(client.deleteEmails);
+    });
+
+    it('supports regex patterns in allowlist', async () => {
+      email.body = 'newsletter';
+      email.from = 'news@trusted-domain.org';
+      email.labels = ['inbox'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'newsletter', fields: ['*'], labels: ['*']
+      }], reporter, ['@trusted-domain\\.org']);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.notCalled(client.deleteEmails);
+    });
+
+    it('works with empty allowlist', async () => {
+      email.body = 'casino';
+      email.from = 'anyone@test.com';
+      email.labels = ['spam'];
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter, []);
+
+      await cleaner.cleanTrash();
+
+      sinon.assert.calledWith(client.deleteEmails, [email]);
+    });
+  });
 });
 
 describe('TrashCleanerFactory', () => {
@@ -295,15 +367,68 @@ describe('TrashCleanerFactory', () => {
   describe('getInstance', () => {
     it('returns a TrashCleaner instance', async () => {
       const configStore = {
-        getJson: sinon.stub().returns([
-          { value: 'test', fields: '*', labels: 'spam' }
-        ])
+        getJson: sinon.stub()
       };
+      configStore.getJson.withArgs('keywords.json').returns([
+        { value: 'test', fields: '*', labels: 'spam' }
+      ]);
+      configStore.getJson.withArgs('allowlist.json').returns(['safe@test.com']);
 
       const factory = new TrashCleanerFactory(configStore, {}, false);
       const cleaner = await factory.getInstance();
 
       assert.instanceOf(cleaner, TrashCleaner);
+    });
+  });
+
+  describe('readAllowlist', () => {
+    it('reads allowlist from config store', async () => {
+      const configStore = {
+        getJson: sinon.stub().withArgs('allowlist.json').returns(['sender@test.com'])
+      };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+      const allowlist = await factory.readAllowlist();
+
+      assert.deepEqual(allowlist, ['sender@test.com']);
+    });
+
+    it('returns empty array when file does not exist', async () => {
+      const configStore = {
+        getJson: sinon.stub().withArgs('allowlist.json').throws(new Error('File not found'))
+      };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+      const allowlist = await factory.readAllowlist();
+
+      assert.deepEqual(allowlist, []);
+    });
+
+    it('throws when file contains invalid JSON', async () => {
+      const configStore = {
+        getJson: sinon.stub().withArgs('allowlist.json')
+          .throws(new Error('Unexpected token in JSON'))
+      };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      try {
+        await factory.readAllowlist();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /Unexpected token/);
+      }
+    });
+
+    it('throws when allowlist is not an array', async () => {
+      const configStore = {
+        getJson: sinon.stub().withArgs('allowlist.json').returns({ sender: 'test' })
+      };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      try {
+        await factory.readAllowlist();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /must contain a JSON array/);
+      }
     });
   });
 
