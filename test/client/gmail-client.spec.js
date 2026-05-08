@@ -29,7 +29,7 @@ describe('GmailCilent', () => {
         });
 
         it('returns empty list when there are no messages', async () => {
-            let emails = await client.getUnreadEmails();
+            const emails = await client.getUnreadEmails();
 
             assert.deepEqual(emails, []);
         });
@@ -54,9 +54,9 @@ describe('GmailCilent', () => {
                 }
             });
 
-            let emails = await client.getUnreadEmails();
+            const emails = await client.getUnreadEmails();
 
-            let email = new Email();
+            const email = new Email();
             email.id = '123';
             email.from = 'spammer';
             email.labels = ['trash'];
@@ -91,7 +91,7 @@ describe('GmailCilent', () => {
                 }
             });
 
-            let emails = await client.getUnreadEmails();
+            const emails = await client.getUnreadEmails();
 
             assert.equal(emails.length, 1);
             assert.deepEqual(emails[0].body, 'spam');
@@ -116,7 +116,7 @@ describe('GmailCilent', () => {
 
             await client.deleteEmails([{ id: '123' }])
 
-            let args = { userId: 'me', ids: ['123'] };
+            const args = { userId: 'me', ids: ['123'] };
             sinon.assert.calledWith(gmail.users.messages.batchDelete, args);
         });
     });

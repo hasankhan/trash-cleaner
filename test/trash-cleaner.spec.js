@@ -57,7 +57,7 @@ describe('TrashCleaner', () => {
         email.body = 'apple';
         email.labels = ['spam'];
 
-        let cleaner = new TrashCleaner(client, [{
+        const cleaner = new TrashCleaner(client, [{
           value: data.value, fields: data.fields, labels: data.labels
         }], reporter)
 
@@ -70,7 +70,7 @@ describe('TrashCleaner', () => {
       email.body = 'orange';
       email.labels = ['spam'];
 
-      let cleaner = new TrashCleaner(client, [{
+      const cleaner = new TrashCleaner(client, [{
         value: 'mango|apple|orange', fields: ['*'], labels: ['spam']
       }], reporter)
 
@@ -83,7 +83,7 @@ describe('TrashCleaner', () => {
       email.body = 'Ápplé';
       email.labels = ['spam'];
 
-      let cleaner = new TrashCleaner(client, [{
+      const cleaner = new TrashCleaner(client, [{
         value: 'apple', fields: ['*'], labels: ['spam']
       }], reporter)
 
@@ -96,7 +96,7 @@ describe('TrashCleaner', () => {
       email.body = 'apple';
       email.labels = ['spam'];
 
-      let cleaner = new TrashCleaner(client, [{
+      const cleaner = new TrashCleaner(client, [{
         value: 'apple', fields: ['*'], labels: ['*']
       }], reporter)
 
@@ -108,7 +108,7 @@ describe('TrashCleaner', () => {
     it('succeeds when there are no emails', async () => {
       client.getUnreadEmails.returns([]);
 
-      let cleaner = new TrashCleaner(client, [{
+      const cleaner = new TrashCleaner(client, [{
         value: 'apple', fields: ['*'], labels: ['inbox']
       }], reporter)
 
@@ -120,17 +120,17 @@ describe('TrashCleaner', () => {
     it('is case insensitive', async () => {
       client.getUnreadEmails.returns([email]);
 
-      let testData = [
+      const testData = [
         { keyword: 'apple', label: 'spam', emailBody: 'APPLE', emailLabel: 'SPAM' },
         { keyword: 'APPLE', label: 'spam', emailBody: 'apple', emailLabel: 'spam' },
         { keyword: 'apple', label: 'SPAM', emailBody: 'apple', emailLabel: 'spam' },
       ];
 
-      for (data of testData) {
+      for (const data of testData) {
         email.body = data.emailBody;
         email.labels = [data.emailLabel];
 
-        let cleaner = new TrashCleaner(client, [{
+        const cleaner = new TrashCleaner(client, [{
           value: data.keyword, fields: ['*'], labels: [data.label]
         }], reporter)
 
@@ -147,7 +147,7 @@ describe('TrashCleaner', () => {
         email[field] = 'apple';
         email.labels = ['spam'];
 
-        let cleaner = new TrashCleaner(client, [{
+        const cleaner = new TrashCleaner(client, [{
           value: 'apple', fields: [field], labels: ['spam']
         }], reporter)
 

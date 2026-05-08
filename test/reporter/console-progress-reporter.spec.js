@@ -13,7 +13,7 @@ describe('ConsoleProgressReporter', () => {
 
     describe('onStart', () => {
         it('starts the spinner', () => {
-            let mock = sinon.mock(reporter._spinner);
+            const mock = sinon.mock(reporter._spinner);
             mock.expects('start').withArgs('Starting cleaning...');
 
             reporter.onStart(true /*dryRun*/);
@@ -25,7 +25,7 @@ describe('ConsoleProgressReporter', () => {
 
     describe('onRetrievingUnreadEmails', () => {
         it('prings a message', () => {
-            let mock = sinon.mock(reporter);
+            const mock = sinon.mock(reporter);
             mock.expects('_update').withArgs('Retrieving emails...');
 
             reporter.onRetrievingUnreadEmails();
@@ -36,7 +36,7 @@ describe('ConsoleProgressReporter', () => {
 
     describe('onUnreadEmailsRetrieved', () => {
         it('prings a message', () => {
-            let mock = sinon.mock(reporter);
+            const mock = sinon.mock(reporter);
             mock.expects('_update').withArgs('Retrieved 10 emails.');
 
             reporter.onUnreadEmailsRetrieved(new Array(10));
@@ -47,7 +47,7 @@ describe('ConsoleProgressReporter', () => {
 
     describe('onTrashEmailsIdentified', () => {
         it('prings a message', () => {
-            let mock = sinon.mock(reporter);
+            const mock = sinon.mock(reporter);
             mock.expects('_update').withArgs('Found 10 trash emails.');
 
             reporter.onTrashEmailsIdentified(new Array(10));
@@ -58,7 +58,7 @@ describe('ConsoleProgressReporter', () => {
 
     describe('onDeletingTrash', () => {
         it('prings a message', () => {
-            let mock = sinon.mock(reporter);
+            const mock = sinon.mock(reporter);
             mock.expects('_update').withArgs('Deleting trash emails...');
 
             reporter.onDeletingTrash();
@@ -73,7 +73,7 @@ describe('ConsoleProgressReporter', () => {
             { dryRun: false, message: 'Trash emails deleted.' }
         ].forEach(data =>
             it(`prints dryrun status: dryRun = ${data.dryRun}`, () => {
-                let mock = sinon.mock(reporter);
+                const mock = sinon.mock(reporter);
 
                 sinon.stub(reporter._spinner, 'start');
                 mock.expects('_update').withArgs(data.message);
@@ -87,7 +87,7 @@ describe('ConsoleProgressReporter', () => {
 
     describe('onStop', () => {
         it('stops the spinner', () => {
-            let mock = sinon.mock(reporter._spinner);
+            const mock = sinon.mock(reporter._spinner);
             mock.expects('stop').once();
             mock.expects('start');
 
@@ -103,7 +103,7 @@ describe('ConsoleProgressReporter', () => {
 
             sinon.stub(reporter, '_update');
 
-            let email = new Email();
+            const email = new Email();
             email.id = 'myid';
             email.labels = ['inbox'];
             email.snippet = 'the snippet';
@@ -113,7 +113,7 @@ describe('ConsoleProgressReporter', () => {
             reporter.onTrashEmailsIdentified([email]);
             reporter.onUnreadEmailsRetrieved(new Array(3));
 
-            let mock = sinon.mock(reporter);
+            const mock = sinon.mock(reporter);
             reporter._log.restore(); // remove the stub
 
             mock.expects('_log').withArgs('From: sender');

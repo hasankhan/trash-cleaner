@@ -39,7 +39,7 @@ describe('OutlookCilent', () => {
             setupFolders([]);
             setupEmails([]);
 
-            let emails = await client.getUnreadEmails();
+            const emails = await client.getUnreadEmails();
 
             mock.verify();
             assert.deepEqual(emails, []);
@@ -71,9 +71,9 @@ describe('OutlookCilent', () => {
                 }
             ]);
 
-            let emails = await client.getUnreadEmails();
+            const emails = await client.getUnreadEmails();
 
-            let email = new Email();
+            const email = new Email();
             email.id = '123';
             email.from = 'spammer <sender@example.com>';
             email.labels = ['inbox'];
