@@ -257,4 +257,73 @@ describe('Cli', () => {
             assert.isTrue(logCalls.some(msg => msg && msg.includes('Cancelled')));
         });
     });
+
+    describe('validate', () => {
+        let tmpDir;
+
+        beforeEach(() => {
+            tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-validate-'));
+        });
+
+        afterEach(() => {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        });
+
+        it('returns false for non-existent config directory', async () => {
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            const result = await cli.run(['node', 'trash-cleaner', 'validate', '/nonexistent']);
+
+            assert.isFalse(result);
+        });
+
+        it('reports valid config when keywords.json is correct', async () => {
+            const keywords = [{ value: 'test', fields: '*', labels: '*' }];
+            fs.writeFileSync(path.join(tmpDir, 'keywords.json'), JSON.stringify(keywords));
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            const result = await cli.run(['node', 'trash-cleaner', 'validate', tmpDir]);
+
+            assert.isTrue(result);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('Configuration is valid')));
+        });
+
+        it('reports error for invalid keywords.json', async () => {
+            fs.writeFileSync(path.join(tmpDir, 'keywords.json'), 'not json');
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            const result = await cli.run(['node', 'trash-cleaner', 'validate', tmpDir]);
+
+            assert.isFalse(result);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('Validation failed')));
+        });
+
+        it('reports missing keywords.json as error', async () => {
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            const result = await cli.run(['node', 'trash-cleaner', 'validate', tmpDir]);
+
+            assert.isFalse(result);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('not found')));
+        });
+
+        it('validates allowlist.json when present', async () => {
+            const keywords = [{ value: 'test', fields: '*', labels: '*' }];
+            fs.writeFileSync(path.join(tmpDir, 'keywords.json'), JSON.stringify(keywords));
+            fs.writeFileSync(path.join(tmpDir, 'allowlist.json'), JSON.stringify(['valid@test\\.com']));
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            const result = await cli.run(['node', 'trash-cleaner', 'validate', tmpDir]);
+
+            assert.isTrue(result);
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('1 pattern')));
+        });
+    });
 });
