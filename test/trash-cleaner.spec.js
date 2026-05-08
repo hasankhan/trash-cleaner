@@ -306,4 +306,108 @@ describe('TrashCleanerFactory', () => {
       assert.instanceOf(cleaner, TrashCleaner);
     });
   });
+
+  describe('config validation', () => {
+    it('rejects non-array config', async () => {
+      const configStore = { getJson: sinon.stub().returns({}) };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      try {
+        await factory.readKeywords();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /must contain a JSON array/);
+      }
+    });
+
+    it('rejects empty array', async () => {
+      const configStore = { getJson: sinon.stub().returns([]) };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      try {
+        await factory.readKeywords();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /at least one keyword/);
+      }
+    });
+
+    it('rejects entry without value', async () => {
+      const configStore = { getJson: sinon.stub().returns([{ fields: '*' }]) };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      try {
+        await factory.readKeywords();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /missing a valid "value" field/);
+      }
+    });
+
+    it('rejects non-string fields', async () => {
+      const configStore = { getJson: sinon.stub().returns([{ value: 'test', fields: ['*'] }]) };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      try {
+        await factory.readKeywords();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /"fields" must be a comma-separated string/);
+      }
+    });
+
+    it('rejects non-string labels', async () => {
+      const configStore = { getJson: sinon.stub().returns([{ value: 'test', labels: ['spam'] }]) };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      try {
+        await factory.readKeywords();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /"labels" must be a comma-separated string/);
+      }
+    });
+
+    it('rejects invalid action', async () => {
+      const configStore = { getJson: sinon.stub().returns([{ value: 'test', action: 'explode' }]) };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      try {
+        await factory.readKeywords();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /invalid action "explode"/);
+      }
+    });
+
+    it('accepts valid config with all fields', async () => {
+      const configStore = {
+        getJson: sinon.stub().returns([
+          { value: 'test', fields: 'subject', labels: 'spam', action: 'archive' }
+        ])
+      };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      const keywords = await factory.readKeywords();
+      assert.equal(keywords.length, 1);
+      assert.equal(keywords[0].action, 'archive');
+    });
+
+    it('includes index in error for bad entry', async () => {
+      const configStore = {
+        getJson: sinon.stub().returns([
+          { value: 'ok' },
+          { value: '' }
+        ])
+      };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      try {
+        await factory.readKeywords();
+        assert.fail('should throw');
+      } catch (err) {
+        assert.match(err.message, /index 1/);
+      }
+    });
+  });
 });
