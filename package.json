@@ -20,12 +20,14 @@
     "ora": "^5.4.1"
   },
   "devDependencies": {
+    "@types/node": "^25.6.2",
     "chai": "^4.3.4",
     "eslint": "^9.39.4",
     "mocha": "^11.7.5",
     "nyc": "^17.1.0",
     "sinon": "^22.0.0",
-    "tmp": "^0.2.5"
+    "tmp": "^0.2.5",
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -36,7 +38,8 @@
   "scripts": {
     "test": "nyc mocha --recursive",
     "coverage": "nyc --reporter=lcov mocha --recursive",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
   },
   "author": "Muhammad Hasan Khan",
   "license": "MIT"
