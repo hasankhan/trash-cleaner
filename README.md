@@ -44,5 +44,49 @@ Options:
   -l, --launch                launch the auth url in the browser
   -c, --configDirPath <path>  the path to config directory (default: "config")
   -s, --service <service>     the email service to use (choices: "gmail", "outlook", default: "gmail")
+  -a, --account <name>        the account name for multi-account support (default: "default")
   -h, --help                  display help for command
+```
+
+## Scheduling
+
+To run trash-cleaner automatically on a schedule:
+
+### Linux/macOS (cron)
+
+Run `crontab -e` and add a line. For example, to run every hour:
+
+```
+0 * * * * /usr/local/bin/trash-cleaner -c /path/to/config
+```
+
+### macOS (launchd)
+
+Create `~/Library/LaunchAgents/com.trash-cleaner.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trash-cleaner</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/trash-cleaner</string>
+        <string>-c</string>
+        <string>/path/to/config</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>3600</integer>
+</dict>
+</plist>
+```
+
+Load it with: `launchctl load ~/Library/LaunchAgents/com.trash-cleaner.plist`
+
+### Windows (Task Scheduler)
+
+```powershell
+schtasks /create /tn "TrashCleaner" /tr "trash-cleaner -c C:\path\to\config" /sc hourly
 ```
