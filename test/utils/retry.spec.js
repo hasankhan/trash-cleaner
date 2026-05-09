@@ -1,6 +1,6 @@
-const sinon = require('sinon');
-const { assert } = require('chai');
-const { retry, isRetryableError } = require('../../lib/utils/retry');
+import sinon from 'sinon';
+import { assert } from 'chai';
+import { retry, isRetryableError } from '../../lib/utils/retry.js';
 
 describe('retry', () => {
     it('returns result on first success', async () => {

@@ -1,18 +1,13 @@
-const { defineConfig } = require("eslint/config");
+import { defineConfig } from "eslint/config";
 
-module.exports = defineConfig([
+export default defineConfig([
     {
         files: ["**/*.js"],
         ignores: ["node_modules/**"],
         languageOptions: {
             ecmaVersion: 2022,
-            sourceType: "commonjs",
+            sourceType: "module",
             globals: {
-                require: "readonly",
-                module: "readonly",
-                exports: "readonly",
-                __dirname: "readonly",
-                __filename: "readonly",
                 process: "readonly",
                 console: "readonly",
                 Buffer: "readonly",
@@ -21,6 +16,7 @@ module.exports = defineConfig([
                 clearTimeout: "readonly",
                 clearInterval: "readonly",
                 Promise: "readonly",
+                URL: "readonly",
             },
         },
         rules: {

@@ -1,7 +1,7 @@
-const sinon = require('sinon');
-const { Email } = require('../../lib/client/email-client');
-const { TrashCleaner, TrashCleanerFactory } = require('../../lib/trash-cleaner');
-const { ProgressReporter } = require('../../lib/reporter/progress-reporter');
+import sinon from 'sinon';
+import { Email } from '../../lib/client/email-client.js';
+import { TrashCleaner, TrashCleanerFactory } from '../../lib/trash-cleaner.js';
+import { ProgressReporter } from '../../lib/reporter/progress-reporter.js';
 
 /**
  * Integration tests that exercise the full flow with mocked email clients.

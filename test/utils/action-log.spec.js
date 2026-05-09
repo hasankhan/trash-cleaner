@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { assert } = require('chai');
-const { ActionLog } = require('../../lib/utils/action-log');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { assert } from 'chai';
+import { ActionLog } from '../../lib/utils/action-log.js';
 
 describe('ActionLog', () => {
     let tmpDir, actionLog;

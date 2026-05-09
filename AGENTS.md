@@ -4,7 +4,7 @@
 
 ```bash
 npm install
-npm test                              # runs: nyc mocha --recursive
+npm test                              # runs: c8 mocha --recursive
 npm run lint                          # runs: eslint .
 npx mocha test/trash-cleaner.spec.js  # single test file
 npx mocha --grep "finds spam"         # single test by name

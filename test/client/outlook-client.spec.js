@@ -1,8 +1,8 @@
-const sinon = require('sinon');
+import sinon from 'sinon';
 
-const { assert } = require('chai');
-const { OutlookClient, OutlookClientFactory } = require('../../lib/client/outlook-client');
-const { Email } = require('../../lib/client/email-client');
+import { assert } from 'chai';
+import { OutlookClient, OutlookClientFactory } from '../../lib/client/outlook-client.js';
+import { Email } from '../../lib/client/email-client.js';
 
 describe('OutlookCilent', () => {
     var client, mock;

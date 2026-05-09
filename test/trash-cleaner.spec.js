@@ -1,9 +1,9 @@
-const sinon = require('sinon');
+import sinon from 'sinon';
 
-const { assert } = require('chai');
-const { Email } = require('../lib/client/email-client');
-const { ProgressReporter } = require('../lib/reporter/progress-reporter');
-const { TrashKeyword, TrashCleaner, TrashCleanerFactory } = require('../lib/trash-cleaner');
+import { assert } from 'chai';
+import { Email } from '../lib/client/email-client.js';
+import { ProgressReporter } from '../lib/reporter/progress-reporter.js';
+import { TrashKeyword, TrashCleaner, TrashCleanerFactory } from '../lib/trash-cleaner.js';
 
 describe('TrashKeyword', () => {
   describe('constructor', () => {

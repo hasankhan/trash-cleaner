@@ -1,9 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-const tmp = require('tmp');
+import fs from 'fs';
+import path from 'path';
+import tmp from 'tmp';
 
-const { assert } = require('chai');
-const { FileSystemConfigStore } = require('../../lib/store/file-system-config-store');
+import { assert } from 'chai';
+import { FileSystemConfigStore } from '../../lib/store/file-system-config-store.js';
 
 const FILE_TEST = 'test.json';
 

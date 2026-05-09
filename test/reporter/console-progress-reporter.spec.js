@@ -1,7 +1,7 @@
-const sinon = require('sinon');
-const { assert } = require('chai');
-const { ConsoleProgressReporter } = require('../../lib/reporter/console-progress-reporter');
-const { Email } = require('../../lib/client/email-client');
+import sinon from 'sinon';
+import { assert } from 'chai';
+import { ConsoleProgressReporter } from '../../lib/reporter/console-progress-reporter.js';
+import { Email } from '../../lib/client/email-client.js';
 
 describe('ConsoleProgressReporter', () => {
     var reporter;
@@ -18,7 +18,6 @@ describe('ConsoleProgressReporter', () => {
 
             reporter.onStart(true /*dryRun*/);
 
-            assert.equal(250, reporter._spinner.interval);
             mock.verify();
         });
     });

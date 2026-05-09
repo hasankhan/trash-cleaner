@@ -1,10 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const sinon = require('sinon');
-const { assert } = require('chai');
-const { HtmlProgressReporter } = require('../../lib/reporter/html-progress-reporter');
-const { Email } = require('../../lib/client/email-client');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import sinon from 'sinon';
+import { assert } from 'chai';
+import { HtmlProgressReporter } from '../../lib/reporter/html-progress-reporter.js';
+import { Email } from '../../lib/client/email-client.js';
 
 describe('HtmlProgressReporter', () => {
     let reporter, tmpDir, outputPath;

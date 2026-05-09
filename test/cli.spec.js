@@ -1,9 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const sinon = require('sinon');
-const { assert } = require('chai');
-const { Cli } = require('../lib/cli');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import sinon from 'sinon';
+import { assert } from 'chai';
+import { Cli } from '../lib/cli.js';
+import { ActionLog } from '../lib/utils/action-log.js';
 
 describe('Cli', () => {
     let cli, sandbox;
@@ -243,7 +244,6 @@ describe('Cli', () => {
         });
 
         it('shows last batch and cancels on decline', async () => {
-            const { ActionLog } = require('../lib/utils/action-log');
             const log = new ActionLog(tmpDir);
             log.record([{ id: '1', action: 'delete', from: 'spam@x.com', subject: 'Junk' }]);
 
