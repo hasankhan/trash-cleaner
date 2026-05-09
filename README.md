@@ -20,12 +20,40 @@ cd trash-cleaner
 npm install -g
 ```
 
-## Gmail Configuration
+## IMAP Configuration (Recommended)
+
+The simplest way to get started. Works with any email provider.
+
+1. Run `trash-cleaner init` to create sample config files
+2. Edit `config/imap.credentials.json` with your email settings:
+   ```json
+   {
+       "host": "imap.gmail.com",
+       "port": 993,
+       "user": "your-email@gmail.com",
+       "password": "your-app-password"
+   }
+   ```
+3. For Gmail: [Create an App Password](https://myaccount.google.com/apppasswords) (requires 2FA)
+4. For Outlook: Use your regular password or an app password
+5. Edit `config/keywords.json` with your filter rules
+
+Common IMAP servers:
+| Provider | Host | Port |
+|----------|------|------|
+| Gmail | imap.gmail.com | 993 |
+| Outlook/Hotmail | outlook.office365.com | 993 |
+| Yahoo | imap.mail.yahoo.com | 993 |
+| iCloud | imap.mail.me.com | 993 |
+
+> **Note**: Some features (undo) are only available with the Gmail/Outlook API backends. Use `--service gmail` or `--service outlook` for those.
+
+## Gmail API Configuration (Advanced)
 1. Create a [Google Cloud Platform project with the API enabled](https://developers.google.com/workspace/guides/create-project).
 2. Create [Authorization credentials for a desktop application](https://developers.google.com/workspace/guides/create-credentials) and download `gmail.credentials.json` file in the `config` directory.
 3. Rename `keywords.json.sample` file in the `config` directory to `keywords.json` and update its contents.
 
-## Outlook Configuration
+## Outlook API Configuration (Advanced)
 1. Register an application with the [Microsoft identity platform](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app).
 2. Rename `outlook.credentials.json.sample` file in the `config` directory to `outlook.credentials.json` and update its contents.
 3. Rename `keywords.json.sample` file in the `config` directory to `keywords.json` and update its contents.
@@ -38,7 +66,7 @@ Initialize the config directory with sample files:
 trash-cleaner init [configDirPath]
 ```
 
-This creates starter `keywords.json`, `gmail.credentials.json`, and `outlook.credentials.json` files. Edit them to match your setup (see configuration sections above).
+This creates starter `keywords.json`, `imap.credentials.json`, `gmail.credentials.json`, and `outlook.credentials.json` files. Edit them to match your setup (see configuration sections above).
 
 To get the list of all parameters type `trash-cleaner -h`
 
@@ -56,7 +84,7 @@ Options:
   -f, --format <format>       output format: text or html (default: "text")
   -m, --min-age <days>        only process emails older than N days
   -c, --configDirPath <path>  the path to config directory (default: "config")
-  -s, --service <service>     the email service to use (choices: "gmail", "outlook", default: "gmail")
+  -s, --service <service>     the email service to use (choices: "imap", "gmail", "outlook", default: "imap")
   -a, --account <name>        the account name for multi-account support (default: "default")
   -h, --help                  display help for command
 ```

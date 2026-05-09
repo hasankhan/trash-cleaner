@@ -78,6 +78,7 @@ describe('Cli', () => {
             await cli.run(['node', 'trash-cleaner', 'init', configDir]);
 
             assert.isTrue(fs.existsSync(path.join(configDir, 'keywords.json')));
+            assert.isTrue(fs.existsSync(path.join(configDir, 'imap.credentials.json')));
             assert.isTrue(fs.existsSync(path.join(configDir, 'gmail.credentials.json')));
             assert.isTrue(fs.existsSync(path.join(configDir, 'outlook.credentials.json')));
         });
