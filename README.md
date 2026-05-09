@@ -24,6 +24,31 @@ npm install -g
 
 The simplest way to get started. Works with any email provider.
 
+### Option 1: Secure Login (Recommended)
+
+Store credentials securely in your OS keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service):
+
+```bash
+trash-cleaner init          # Create config directory with sample files
+trash-cleaner login         # Prompts for IMAP credentials, saves to OS keychain
+```
+
+For other services:
+```bash
+trash-cleaner login -s gmail
+trash-cleaner login -s outlook
+```
+
+To remove stored credentials:
+```bash
+trash-cleaner logout        # Remove IMAP credentials from keychain
+trash-cleaner logout -s gmail
+```
+
+### Option 2: File-based Configuration
+
+If your system doesn't have a keychain, credentials fall back to JSON files:
+
 1. Run `trash-cleaner init` to create sample config files
 2. Edit `config/imap.credentials.json` with your email settings:
    ```json
@@ -34,9 +59,12 @@ The simplest way to get started. Works with any email provider.
        "password": "your-app-password"
    }
    ```
-3. For Gmail: [Create an App Password](https://myaccount.google.com/apppasswords) (requires 2FA)
-4. For Outlook: Use your regular password or an app password
-5. Edit `config/keywords.json` with your filter rules
+
+### App Passwords
+
+- **Gmail**: [Create an App Password](https://myaccount.google.com/apppasswords) (requires 2FA)
+- **Outlook**: Use your regular password or an app password
+- **Yahoo**: Account Security → Generate app password
 
 Common IMAP servers:
 | Provider | Host | Port |
@@ -102,6 +130,12 @@ Validates configuration files and reports any issues.
 
 ### `trash-cleaner undo [configDirPath]`
 Shows the last batch of processed emails and offers to restore them.
+
+### `trash-cleaner login [-s service] [-a account]`
+Prompts for credentials and saves them securely in the OS keychain. Supports `--service imap` (default), `gmail`, or `outlook`.
+
+### `trash-cleaner logout [-s service] [-a account]`
+Removes stored credentials from the OS keychain.
 
 ## Features
 
