@@ -30,7 +30,7 @@ describe('FileSystemConfigStore', () => {
         it('throws for non-existent directory', () => {
             assert.throws(
                 () => new FileSystemConfigStore('/nonexistent/path'),
-                /Invalid config directory path/
+                /Config directory not found/
             );
         });
 
