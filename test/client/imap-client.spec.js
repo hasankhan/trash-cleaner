@@ -17,6 +17,9 @@ describe('ImapClient', () => {
             messageFlagsAdd: sandbox.stub().resolves(),
             messageDelete: sandbox.stub().resolves(),
             messageMove: sandbox.stub().resolves(),
+            list: sandbox.stub().resolves([
+                { path: 'INBOX', flags: new Set(), specialUse: '\\Inbox' }
+            ]),
         };
     });
 
