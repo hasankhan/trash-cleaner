@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import { assert } from 'chai';
 import { Email } from '../lib/client/email-client.js';
 import { ProgressReporter } from '../lib/reporter/progress-reporter.js';
-import { TrashKeyword, TrashCleaner, TrashCleanerFactory } from '../lib/trash-cleaner.js';
+import { TrashKeyword, TrashCleaner, TrashCleanerFactory, LlmTrashRule } from '../lib/trash-cleaner.js';
 
 describe('TrashKeyword', () => {
   describe('constructor', () => {
@@ -35,6 +35,16 @@ describe('TrashKeyword', () => {
 
     it('throws for invalid action', () => {
       assert.throws(() => new TrashKeyword('apple', ['*'], ['spam'], 'invalid'), /Invalid action/);
+    })
+
+    it('defaults type to keyword', () => {
+      const keyword = new TrashKeyword('apple', ['*'], ['spam']);
+      assert.equal(keyword.type, 'keyword');
+    })
+
+    it('accepts llm type', () => {
+      const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'delete', 'llm');
+      assert.equal(keyword.type, 'llm');
     })
   })
 });
@@ -383,7 +393,7 @@ describe('TrashCleaner', () => {
   });
 
   describe('filterTrashEmails', () => {
-    it('returns matching emails without fetching', () => {
+    it('returns matching emails without fetching', async () => {
       email.body = 'casino offer';
       email.labels = ['spam'];
 
@@ -391,12 +401,12 @@ describe('TrashCleaner', () => {
         value: 'casino', fields: ['*'], labels: ['*']
       }], reporter);
 
-      const result = cleaner.filterTrashEmails([email]);
+      const result = await cleaner.filterTrashEmails([email]);
 
       assert.deepEqual(result, [email]);
     });
 
-    it('normalizes diacritics before matching', () => {
+    it('normalizes diacritics before matching', async () => {
       email.body = 'cásìnó';
       email.labels = ['spam'];
 
@@ -404,7 +414,7 @@ describe('TrashCleaner', () => {
         value: 'casino', fields: ['*'], labels: ['*']
       }], reporter);
 
-      const result = cleaner.filterTrashEmails([email]);
+      const result = await cleaner.filterTrashEmails([email]);
 
       assert.deepEqual(result, [email]);
     });
@@ -641,5 +651,84 @@ describe('TrashCleanerFactory', () => {
         assert.match(err.message, /index 1/);
       }
     });
+  });
+});
+
+describe('LlmTrashRule', () => {
+  it('stores label and action from keyword', () => {
+    const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'archive', 'llm');
+    const rule = new LlmTrashRule(keyword);
+    assert.equal(rule.label, 'marketing email');
+    assert.equal(rule.action, 'archive');
+    assert.deepEqual(rule.labels, ['*']);
+  });
+
+  it('defaults action to delete', () => {
+    const keyword = new TrashKeyword('spam content', ['*'], ['inbox'], undefined, 'llm');
+    const rule = new LlmTrashRule(keyword);
+    assert.equal(rule.action, 'delete');
+  });
+
+  it('uses default threshold', async () => {
+    const { DEFAULT_THRESHOLD } = await import('../lib/classifier/llm-classifier.js');
+    const keyword = new TrashKeyword('promo', ['*'], ['*'], 'delete', 'llm');
+    const rule = new LlmTrashRule(keyword);
+    assert.equal(rule.threshold, DEFAULT_THRESHOLD);
+  });
+});
+
+describe('TrashCleanerFactory with LLM rules', () => {
+  it('parses llm type from config', async () => {
+    const configStore = {
+      getJson: sinon.stub().returns([
+        { value: 'marketing email', labels: '*', type: 'llm', action: 'archive' }
+      ])
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+    const keywords = await factory.readKeywords();
+
+    assert.equal(keywords.length, 1);
+    assert.equal(keywords[0].type, 'llm');
+    assert.equal(keywords[0].value, 'marketing email');
+    assert.equal(keywords[0].action, 'archive');
+  });
+
+  it('defaults type to keyword when not specified', async () => {
+    const configStore = {
+      getJson: sinon.stub().returns([
+        { value: 'casino', fields: 'subject', labels: 'spam' }
+      ])
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+    const keywords = await factory.readKeywords();
+
+    assert.equal(keywords[0].type, 'keyword');
+  });
+
+  it('rejects invalid type', async () => {
+    const configStore = {
+      getJson: sinon.stub().returns([
+        { value: 'test', type: 'invalid' }
+      ])
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+
+    try {
+      await factory.readKeywords();
+      assert.fail('should throw');
+    } catch (err) {
+      assert.match(err.message, /invalid type/);
+    }
+  });
+
+  it('creates LlmTrashRule for llm type keywords', () => {
+    const reporter = new ProgressReporter();
+    const keywords = [
+      new TrashKeyword('marketing', ['*'], ['*'], 'archive', 'llm'),
+      new TrashKeyword('casino', ['*'], ['*'], 'delete', 'keyword')
+    ];
+    const cleaner = new TrashCleaner({}, keywords, reporter);
+    assert.instanceOf(cleaner._rules[0], LlmTrashRule);
+    assert.notInstanceOf(cleaner._rules[1], LlmTrashRule);
   });
 });

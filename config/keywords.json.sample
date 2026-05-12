@@ -5,5 +5,7 @@
     { "value": "lucky|winner", "fields": "body", "labels": "spam,junk email" },
     { "value": "pharma", "fields": "subject,snippet", "labels": "spam,junk email" },
     { "value": "newsletter", "fields": "subject", "labels": "inbox", "action": "archive" },
-    { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" }
+    { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" },
+    { "value": "marketing email", "labels": "*", "type": "llm", "action": "archive" },
+    { "value": "someone selling me something", "labels": "inbox", "type": "llm" }
 ]
