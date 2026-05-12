@@ -548,16 +548,20 @@ describe('TrashCleanerFactory', () => {
       }
     });
 
-    it('rejects empty array', async () => {
+    it('returns empty array for empty keywords config', async () => {
       const configStore = { getJson: sinon.stub().returns([]) };
       const factory = new TrashCleanerFactory(configStore, {}, false);
 
-      try {
-        await factory.readKeywords();
-        assert.fail('should throw');
-      } catch (err) {
-        assert.match(err.message, /at least one keyword/);
-      }
+      const result = await factory.readKeywords();
+      assert.deepEqual(result, []);
+    });
+
+    it('returns empty array when keywords.json does not exist', async () => {
+      const configStore = { getJson: sinon.stub().rejects(new Error('ENOENT: no such file')) };
+      const factory = new TrashCleanerFactory(configStore, {}, false);
+
+      const result = await factory.readKeywords();
+      assert.deepEqual(result, []);
     });
 
     it('rejects entry without value', async () => {
