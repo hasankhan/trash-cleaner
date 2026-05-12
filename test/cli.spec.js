@@ -26,20 +26,21 @@ describe('Cli', () => {
             assert.isFalse(result);
         });
 
-        it('returns false and logs error message by default', async () => {
+        it('returns false and logs error message when config dir missing', async () => {
             const result = await cli.run(['node', 'trash-cleaner', '-c', '/nonexistent/path']);
 
             assert.isFalse(result);
             sinon.assert.calledOnce(console.error);
-            // In non-debug mode, only err.message is logged
-            assert.isString(console.error.firstCall.args[0]);
+            assert.include(console.error.firstCall.args[0], 'Config directory not found');
+            assert.include(console.error.firstCall.args[0], 'trash-cleaner init');
         });
 
-        it('returns false and logs full error in debug mode', async () => {
+        it('returns false and logs init hint in debug mode too', async () => {
             const result = await cli.run(['node', 'trash-cleaner', '-c', '/nonexistent/path', '-d']);
 
             assert.isFalse(result);
-            sinon.assert.calledWith(console.error, 'An error occurred:', sinon.match.instanceOf(Error));
+            sinon.assert.calledOnce(console.error);
+            assert.include(console.error.firstCall.args[0], 'Config directory not found');
         });
 
         it('throws for unsupported email service', async () => {
@@ -325,6 +326,74 @@ describe('Cli', () => {
             assert.isTrue(result);
             const logCalls = console.log.args.map(a => a[0]);
             assert.isTrue(logCalls.some(msg => msg && msg.includes('1 pattern')));
+        });
+    });
+
+    describe('login', () => {
+        beforeEach(() => {
+            sandbox.stub(console, 'log');
+        });
+
+        function mockReadline(cliInstance, answers) {
+            let callIndex = 0;
+            sandbox.stub(cliInstance, '_createReadlineInterface').returns({
+                question: (q, cb) => cb(answers[callIndex++] || ''),
+                close: () => {}
+            });
+        }
+
+        it('returns false when IMAP host is empty', async () => {
+            mockReadline(cli, ['', '993', 'user@test.com', 'pass123']);
+
+            const result = await cli.run(['node', 'trash-cleaner', 'login']);
+
+            assert.isFalse(result);
+            sinon.assert.calledWith(console.error, 'Error: IMAP host is required.');
+        });
+
+        it('returns false when email is empty', async () => {
+            mockReadline(cli, ['imap.gmail.com', '993', '', 'pass123']);
+
+            const result = await cli.run(['node', 'trash-cleaner', 'login']);
+
+            assert.isFalse(result);
+            sinon.assert.calledWith(console.error, 'Error: Email address is required.');
+        });
+
+        it('returns false when password is empty', async () => {
+            mockReadline(cli, ['imap.gmail.com', '993', 'user@test.com', '']);
+
+            const result = await cli.run(['node', 'trash-cleaner', 'login']);
+
+            assert.isFalse(result);
+            sinon.assert.calledWith(console.error, 'Error: App password is required.');
+        });
+
+        it('returns false when Gmail JSON is empty', async () => {
+            mockReadline(cli, ['']);
+
+            const result = await cli.run(['node', 'trash-cleaner', 'login', '-s', 'gmail']);
+
+            assert.isFalse(result);
+            sinon.assert.calledWith(console.error, 'Error: OAuth2 credentials JSON is required.');
+        });
+
+        it('returns false when Outlook client ID is empty', async () => {
+            mockReadline(cli, ['', 'tenant-123']);
+
+            const result = await cli.run(['node', 'trash-cleaner', 'login', '-s', 'outlook']);
+
+            assert.isFalse(result);
+            sinon.assert.calledWith(console.error, 'Error: Client ID is required.');
+        });
+
+        it('returns false when Outlook tenant ID is empty', async () => {
+            mockReadline(cli, ['client-123', '']);
+
+            const result = await cli.run(['node', 'trash-cleaner', 'login', '-s', 'outlook']);
+
+            assert.isFalse(result);
+            sinon.assert.calledWith(console.error, 'Error: Tenant ID is required.');
         });
     });
 });
