@@ -105,6 +105,7 @@ Rules live in `keywords.json` in your config directory (`~/.config/trash-cleaner
 | Field | Required | Description |
 |-------|----------|-------------|
 | `value` | Yes | **Keyword rules**: A regex pattern to match. **LLM rules**: A natural language description. |
+| `title` | No | A human-readable name for the rule, shown when it matches. Defaults to `value` if omitted. |
 | `fields` | No | Comma-separated email fields to search: `from`, `subject`, `snippet`, `body`, or `*` for all. Default: `*` |
 | `labels` | No | Comma-separated folder/label names to scope the rule: `inbox`, `spam`, `trash`, `junk email`, or `*` for all. Default: `*` |
 | `action` | No | What to do with matches: `delete`, `archive`, or `mark-as-read`. Default: `delete` |
@@ -116,9 +117,9 @@ Keyword rules use regular expressions to match email content. They are fast and 
 
 ```json
 [
-    { "value": "casino", "fields": "*", "labels": "*" },
-    { "value": "credit|loan", "fields": "subject", "labels": "spam,junk email" },
-    { "value": "newsletter", "fields": "subject", "labels": "inbox", "action": "archive" },
+    { "value": "casino", "fields": "*", "labels": "*", "title": "Casino spam" },
+    { "value": "credit|loan", "fields": "subject", "labels": "spam,junk email", "title": "Credit scams" },
+    { "value": "newsletter", "fields": "subject", "labels": "inbox", "action": "archive", "title": "Newsletters" },
     { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" }
 ]
 ```
@@ -134,7 +135,7 @@ LLM rules use a local AI model to match emails by meaning rather than exact text
 
 ```json
 [
-    { "value": "marketing or promotional email", "labels": "*", "type": "llm", "action": "archive" },
+    { "value": "marketing or promotional email", "labels": "*", "type": "llm", "action": "archive", "title": "Marketing emails" },
     { "value": "someone selling me something", "labels": "inbox", "type": "llm" }
 ]
 ```
@@ -161,11 +162,11 @@ Use `fields` to limit which parts of an email are searched (keyword rules only):
 
 ```json
 [
-    { "value": ".", "fields": "*", "labels": "trash,deleted items" },
-    { "value": "casino|lottery|winner", "fields": "*", "labels": "spam,junk email" },
-    { "value": "unsubscribe", "fields": "body", "labels": "inbox", "action": "archive" },
+    { "value": ".", "fields": "*", "labels": "trash,deleted items", "title": "Clean trash folder" },
+    { "value": "casino|lottery|winner", "fields": "*", "labels": "spam,junk email", "title": "Gambling spam" },
+    { "value": "unsubscribe", "fields": "body", "labels": "inbox", "action": "archive", "title": "Bulk mail" },
     { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" },
-    { "value": "marketing or promotional email", "labels": "inbox", "type": "llm", "action": "archive" }
+    { "value": "marketing or promotional email", "labels": "inbox", "type": "llm", "action": "archive", "title": "Marketing emails" }
 ]
 ```
 

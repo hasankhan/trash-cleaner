@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import { assert } from 'chai';
 import { Email } from '../lib/client/email-client.js';
 import { ProgressReporter } from '../lib/reporter/progress-reporter.js';
-import { TrashKeyword, TrashCleaner, TrashCleanerFactory, LlmTrashRule } from '../lib/trash-cleaner.js';
+import { TrashKeyword, TrashCleaner, TrashCleanerFactory, LlmTrashRule, KeywordTrashRule } from '../lib/trash-cleaner.js';
 
 describe('TrashKeyword', () => {
   describe('constructor', () => {
@@ -730,5 +730,106 @@ describe('TrashCleanerFactory with LLM rules', () => {
     const cleaner = new TrashCleaner({}, keywords, reporter);
     assert.instanceOf(cleaner._rules[0], LlmTrashRule);
     assert.notInstanceOf(cleaner._rules[1], LlmTrashRule);
+  });
+});
+
+describe('Rule title', () => {
+  it('KeywordTrashRule uses title from keyword when provided', () => {
+    const keyword = new TrashKeyword('casino', ['*'], ['*'], 'delete', 'keyword', 'Casino spam');
+    const rule = new KeywordTrashRule(keyword);
+    assert.equal(rule.title, 'Casino spam');
+  });
+
+  it('KeywordTrashRule defaults title to value when not provided', () => {
+    const keyword = new TrashKeyword('casino', ['*'], ['*']);
+    const rule = new KeywordTrashRule(keyword);
+    assert.equal(rule.title, 'casino');
+  });
+
+  it('LlmTrashRule uses title from keyword when provided', () => {
+    const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'archive', 'llm', 'Marketing emails');
+    const rule = new LlmTrashRule(keyword);
+    assert.equal(rule.title, 'Marketing emails');
+  });
+
+  it('LlmTrashRule defaults title to value when not provided', () => {
+    const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'archive', 'llm');
+    const rule = new LlmTrashRule(keyword);
+    assert.equal(rule.title, 'marketing email');
+  });
+
+  it('_isTrashEmail sets _rule on matched email', async () => {
+    const email = { from: 'test', subject: 'casino offer', snippet: '', body: 'casino offer', labels: ['spam'] };
+    const keyword = new TrashKeyword('casino', ['*'], ['*'], 'delete', 'keyword', 'Casino spam');
+    const reporter = new ProgressReporter();
+    const cleaner = new TrashCleaner({}, [keyword], reporter);
+
+    const result = await cleaner.filterTrashEmails([email]);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]._rule, 'Casino spam');
+  });
+
+  it('TrashKeyword stores title', () => {
+    const keyword = new TrashKeyword('test', ['*'], ['*'], 'delete', 'keyword', 'My Rule');
+    assert.equal(keyword.title, 'My Rule');
+  });
+
+  it('TrashKeyword title defaults to undefined when not provided', () => {
+    const keyword = new TrashKeyword('test', ['*'], ['*']);
+    assert.equal(keyword.title, undefined);
+  });
+
+  it('readKeywords parses title from config', async () => {
+    const configStore = {
+      getJson: sinon.stub().returns([
+        { value: 'casino', fields: '*', labels: 'spam', title: 'Casino spam' }
+      ])
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+    const keywords = await factory.readKeywords();
+    assert.equal(keywords[0].title, 'Casino spam');
+  });
+
+  it('validation rejects non-string title', async () => {
+    const configStore = {
+      getJson: sinon.stub().returns([
+        { value: 'test', title: 123 }
+      ])
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+
+    try {
+      await factory.readKeywords();
+      assert.fail('should throw');
+    } catch (err) {
+      assert.match(err.message, /"title" must be a non-empty string/);
+    }
+  });
+
+  it('validation rejects empty title', async () => {
+    const configStore = {
+      getJson: sinon.stub().returns([
+        { value: 'test', title: '  ' }
+      ])
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+
+    try {
+      await factory.readKeywords();
+      assert.fail('should throw');
+    } catch (err) {
+      assert.match(err.message, /"title" must be a non-empty string/);
+    }
+  });
+
+  it('validation accepts missing title', async () => {
+    const configStore = {
+      getJson: sinon.stub().returns([
+        { value: 'test' }
+      ])
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+    const keywords = await factory.readKeywords();
+    assert.equal(keywords.length, 1);
   });
 });
