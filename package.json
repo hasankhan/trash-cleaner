@@ -1,6 +1,6 @@
 {
   "name": "trash-cleaner",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Finds and deletes trash email in the mailbox",
   "keywords": [
     "gmail",
@@ -44,6 +44,10 @@
     "coverage": "c8 --reporter=lcov mocha --recursive",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hasankhan/trash-cleaner"
   },
   "author": "Muhammad Hasan Khan",
   "license": "MIT",
