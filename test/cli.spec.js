@@ -185,11 +185,28 @@ describe('Cli', () => {
 
             sinon.assert.calledOnce(trashCleaner.findTrash);
             sinon.assert.calledWith(trashCleaner.processEmails, [email]);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('1 trash email')));
         });
 
-        it('cancels when user declines', async () => {
+        it('skips emails user declines', async () => {
+            const email1 = { id: '1', from: 'spam@test.com', subject: 'Win!', _action: 'delete', labels: ['spam'] };
+            const email2 = { id: '2', from: 'store@test.com', subject: 'Sale', _action: 'archive', labels: ['inbox'] };
+            const trashCleaner = {
+                findTrash: sinon.stub().resolves([email1, email2]),
+                processEmails: sinon.stub().resolves()
+            };
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            const confirmStub = sandbox.stub(cli, '_confirm');
+            confirmStub.onCall(0).resolves(true);
+            confirmStub.onCall(1).resolves(false);
+
+            await cli._runInteractive(trashCleaner);
+
+            sinon.assert.calledWith(trashCleaner.processEmails, [email1]);
+        });
+
+        it('does nothing when all declined', async () => {
             const email = { id: '1', from: 'spam@test.com', subject: 'Win!', _action: 'delete', labels: ['spam'] };
             const trashCleaner = {
                 findTrash: sinon.stub().resolves([email]),
@@ -204,7 +221,7 @@ describe('Cli', () => {
 
             sinon.assert.notCalled(trashCleaner.processEmails);
             const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('Cancelled')));
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('No emails selected')));
         });
 
         it('reports no trash found', async () => {
