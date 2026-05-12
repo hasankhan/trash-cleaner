@@ -8,7 +8,10 @@ npm test                              # runs: c8 mocha --recursive
 npm run lint                          # runs: eslint .
 npx mocha test/trash-cleaner.spec.js  # single test file
 npx mocha --grep "finds spam"         # single test by name
+npm install -g .                      # install globally for manual testing
 ```
+
+After completing a task, run `npm install -g .` so the latest changes are available globally for manual testing.
 
 ## Architecture
 
