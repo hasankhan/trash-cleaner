@@ -96,6 +96,81 @@ trash-cleaner init [configDirPath]
 
 This creates starter `keywords.json`, `imap.credentials.json`, `gmail.credentials.json`, and `outlook.credentials.json` files. Edit them to match your setup (see configuration sections above).
 
+## Configuring Rules
+
+Rules live in `keywords.json` in your config directory (`~/.config/trash-cleaner/` by default). The file contains a JSON array of rule objects. Each rule tells trash-cleaner which emails to match and what to do with them.
+
+### Rule Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `value` | Yes | **Keyword rules**: A regex pattern to match. **LLM rules**: A natural language description. |
+| `fields` | No | Comma-separated email fields to search: `from`, `subject`, `snippet`, `body`, or `*` for all. Default: `*` |
+| `labels` | No | Comma-separated folder/label names to scope the rule: `inbox`, `spam`, `trash`, `junk email`, or `*` for all. Default: `*` |
+| `action` | No | What to do with matches: `delete`, `archive`, or `mark-as-read`. Default: `delete` |
+| `type` | No | Rule type: `keyword` (regex, default) or `llm` (semantic similarity). |
+
+### Keyword Rules (Regex)
+
+Keyword rules use regular expressions to match email content. They are fast and precise.
+
+```json
+[
+    { "value": "casino", "fields": "*", "labels": "*" },
+    { "value": "credit|loan", "fields": "subject", "labels": "spam,junk email" },
+    { "value": "newsletter", "fields": "subject", "labels": "inbox", "action": "archive" },
+    { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" }
+]
+```
+
+- **Delete all trash**: `{ "value": ".", "fields": "*", "labels": "trash,deleted items" }` — the `.` regex matches any character, so this deletes everything in the trash folder.
+- **Match multiple words**: `{ "value": "lucky|winner|prize", "fields": "body", "labels": "spam" }` — uses regex `|` (OR) to match any of the words.
+- **Match emoji in subject**: `{ "value": "[\\u{1F600}-\\u{1F64F}]", "fields": "subject", "labels": "*" }` — uses Unicode character ranges to match emoji.
+- Matching is **case-insensitive** and **diacritic-insensitive** (e.g., "café" matches "cafe").
+
+### LLM Rules (Semantic Similarity)
+
+LLM rules use a local AI model to match emails by meaning rather than exact text. Write a natural language description of what you want to match. The model (~23MB, downloaded on first use) compares your description against each email's subject, snippet, and sender.
+
+```json
+[
+    { "value": "marketing or promotional email", "labels": "*", "type": "llm", "action": "archive" },
+    { "value": "someone selling me something", "labels": "inbox", "type": "llm" }
+]
+```
+
+- The `value` is a **description**, not a regex — write it like you'd describe the email to someone.
+- LLM rules are slower than keyword rules (~200ms per email) but can catch things regex can't.
+- The model runs **locally** on your device — no data is sent to any server.
+- The model is only downloaded if you have at least one LLM rule configured.
+
+### Scoping Rules with Labels and Fields
+
+Use `labels` to limit which folders a rule applies to:
+- `"labels": "inbox"` — only match emails in your inbox
+- `"labels": "spam,junk email"` — only match emails in spam/junk folders
+- `"labels": "trash,deleted items"` — only match emails in trash
+- `"labels": "*"` — match emails in any folder
+
+Use `fields` to limit which parts of an email are searched (keyword rules only):
+- `"fields": "subject"` — only search the subject line
+- `"fields": "subject,body"` — search subject and body
+- `"fields": "*"` — search all fields (from, subject, snippet, body)
+
+### Example Configuration
+
+```json
+[
+    { "value": ".", "fields": "*", "labels": "trash,deleted items" },
+    { "value": "casino|lottery|winner", "fields": "*", "labels": "spam,junk email" },
+    { "value": "unsubscribe", "fields": "body", "labels": "inbox", "action": "archive" },
+    { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" },
+    { "value": "marketing or promotional email", "labels": "inbox", "type": "llm", "action": "archive" }
+]
+```
+
+Rules are evaluated in order — the **first matching rule wins**. Place more specific rules before general ones.
+
 To get the list of all parameters type `trash-cleaner -h`
 
 ```
@@ -138,16 +213,6 @@ Prompts for credentials and saves them securely in the OS keychain. Supports `--
 Removes stored credentials from the OS keychain.
 
 ## Features
-
-### Actions
-Each keyword rule can specify an action: `delete` (default), `archive`, or `mark-as-read`.
-
-```json
-[
-  { "value": "unsubscribe", "fields": "body", "labels": "promotions", "action": "archive" },
-  { "value": "newsletter", "fields": "*", "labels": "*", "action": "mark-as-read" }
-]
-```
 
 ### Multi-Account Support
 Run against different accounts using the `-a` flag:
