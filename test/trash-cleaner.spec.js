@@ -418,6 +418,42 @@ describe('TrashCleaner', () => {
 
       assert.deepEqual(result, [email]);
     });
+
+    it('skips emails older than lastRun when seenCache is set', async () => {
+      email.body = 'casino offer';
+      email.labels = ['spam'];
+      email.date = new Date('2026-05-10T08:00:00Z');
+
+      const seenCache = {
+        isSeen: sinon.stub().returns(true)
+      };
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter, [], null, null, seenCache);
+
+      const result = await cleaner.filterTrashEmails([email]);
+
+      assert.equal(result.length, 0);
+    });
+
+    it('evaluates emails newer than lastRun', async () => {
+      email.body = 'casino offer';
+      email.labels = ['spam'];
+      email.date = new Date('2026-05-13T08:00:00Z');
+
+      const seenCache = {
+        isSeen: sinon.stub().returns(false)
+      };
+
+      const cleaner = new TrashCleaner(client, [{
+        value: 'casino', fields: ['*'], labels: ['*']
+      }], reporter, [], null, null, seenCache);
+
+      const result = await cleaner.filterTrashEmails([email]);
+
+      assert.deepEqual(result, [email]);
+    });
   });
 });
 
@@ -431,7 +467,7 @@ describe('TrashCleanerFactory', () => {
       };
 
       const factory = new TrashCleanerFactory(configStore, {}, false);
-      const keywords = await factory.readKeywords();
+      const { keywords } = await factory.readKeywords();
 
       assert.equal(keywords.length, 1);
       assert.equal(keywords[0].value, 'casino');
@@ -447,7 +483,7 @@ describe('TrashCleanerFactory', () => {
       };
 
       const factory = new TrashCleanerFactory(configStore, {}, false);
-      const keywords = await factory.readKeywords();
+      const { keywords } = await factory.readKeywords();
 
       assert.deepEqual(keywords[0].fields, ['*']);
       assert.deepEqual(keywords[0].labels, ['*']);
@@ -480,12 +516,14 @@ describe('TrashCleanerFactory', () => {
   describe('getInstance', () => {
     it('returns a TrashCleaner instance', async () => {
       const configStore = {
-        getJson: sinon.stub()
+        getJson: sinon.stub(),
+        putJson: sinon.stub()
       };
       configStore.getJson.withArgs('keywords.json').returns([
         { value: 'test', fields: '*', labels: 'spam' }
       ]);
       configStore.getJson.withArgs('allowlist.json').returns(['safe@test.com']);
+      configStore.getJson.withArgs('seen.json').returns(null);
 
       const factory = new TrashCleanerFactory(configStore, {}, false);
       const cleaner = await factory.getInstance();
@@ -562,16 +600,16 @@ describe('TrashCleanerFactory', () => {
       const configStore = { getJson: sinon.stub().returns([]) };
       const factory = new TrashCleanerFactory(configStore, {}, false);
 
-      const result = await factory.readKeywords();
-      assert.deepEqual(result, []);
+      const { keywords } = await factory.readKeywords();
+      assert.deepEqual(keywords, []);
     });
 
     it('returns empty array when keywords.json does not exist', async () => {
       const configStore = { getJson: sinon.stub().rejects(new Error('ENOENT: no such file')) };
       const factory = new TrashCleanerFactory(configStore, {}, false);
 
-      const result = await factory.readKeywords();
-      assert.deepEqual(result, []);
+      const { keywords } = await factory.readKeywords();
+      assert.deepEqual(keywords, []);
     });
 
     it('rejects entry without value', async () => {
@@ -630,7 +668,7 @@ describe('TrashCleanerFactory', () => {
       };
       const factory = new TrashCleanerFactory(configStore, {}, false);
 
-      const keywords = await factory.readKeywords();
+      const { keywords } = await factory.readKeywords();
       assert.equal(keywords.length, 1);
       assert.equal(keywords[0].action, 'archive');
     });
@@ -685,7 +723,7 @@ describe('TrashCleanerFactory with LLM rules', () => {
       ])
     };
     const factory = new TrashCleanerFactory(configStore, {}, false);
-    const keywords = await factory.readKeywords();
+    const { keywords } = await factory.readKeywords();
 
     assert.equal(keywords.length, 1);
     assert.equal(keywords[0].type, 'llm');
@@ -700,7 +738,7 @@ describe('TrashCleanerFactory with LLM rules', () => {
       ])
     };
     const factory = new TrashCleanerFactory(configStore, {}, false);
-    const keywords = await factory.readKeywords();
+    const { keywords } = await factory.readKeywords();
 
     assert.equal(keywords[0].type, 'keyword');
   });
@@ -786,7 +824,7 @@ describe('Rule title', () => {
       ])
     };
     const factory = new TrashCleanerFactory(configStore, {}, false);
-    const keywords = await factory.readKeywords();
+    const { keywords } = await factory.readKeywords();
     assert.equal(keywords[0].title, 'Casino spam');
   });
 
@@ -829,7 +867,7 @@ describe('Rule title', () => {
       ])
     };
     const factory = new TrashCleanerFactory(configStore, {}, false);
-    const keywords = await factory.readKeywords();
+    const { keywords } = await factory.readKeywords();
     assert.equal(keywords.length, 1);
   });
 });

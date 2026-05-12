@@ -170,13 +170,15 @@ describe('Integration: TrashCleanerFactory full flow', () => {
 
     it('creates cleaner and processes emails end-to-end', async () => {
         const configStore = {
-            getJson: sinon.stub()
+            getJson: sinon.stub(),
+            putJson: sinon.stub().resolves()
         };
         configStore.getJson.withArgs('keywords.json').resolves([
             { value: 'spam', fields: '*', labels: '*', action: 'delete' },
             { value: 'promo', fields: 'subject', labels: 'inbox', action: 'archive' }
         ]);
         configStore.getJson.withArgs('allowlist.json').resolves(['vip@company\\.com']);
+        configStore.getJson.withArgs('seen.json').resolves(null);
 
         const email1 = new Email();
         email1.id = '1';
