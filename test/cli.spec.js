@@ -179,7 +179,7 @@ describe('Cli', () => {
 
             sandbox.stub(console, 'log');
             cli = new Cli();
-            sandbox.stub(cli, '_confirm').resolves(true);
+            sandbox.stub(cli, '_promptAction').resolves('yes');
 
             await cli._runInteractive(trashCleaner);
 
@@ -197,13 +197,69 @@ describe('Cli', () => {
 
             sandbox.stub(console, 'log');
             cli = new Cli();
-            const confirmStub = sandbox.stub(cli, '_confirm');
-            confirmStub.onCall(0).resolves(true);
-            confirmStub.onCall(1).resolves(false);
+            const promptStub = sandbox.stub(cli, '_promptAction');
+            promptStub.onCall(0).resolves('yes');
+            promptStub.onCall(1).resolves('no');
 
             await cli._runInteractive(trashCleaner);
 
             sinon.assert.calledWith(trashCleaner.processEmails, [email1]);
+        });
+
+        it('yes-all confirms remaining emails without prompting', async () => {
+            const email1 = { id: '1', from: 'a@test.com', subject: 'A', _action: 'delete', labels: ['spam'] };
+            const email2 = { id: '2', from: 'b@test.com', subject: 'B', _action: 'delete', labels: ['spam'] };
+            const email3 = { id: '3', from: 'c@test.com', subject: 'C', _action: 'delete', labels: ['spam'] };
+            const trashCleaner = {
+                findTrash: sinon.stub().resolves([email1, email2, email3]),
+                processEmails: sinon.stub().resolves()
+            };
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            const promptStub = sandbox.stub(cli, '_promptAction');
+            promptStub.onCall(0).resolves('yes-all');
+
+            await cli._runInteractive(trashCleaner);
+
+            sinon.assert.calledOnce(promptStub);
+            sinon.assert.calledWith(trashCleaner.processEmails, [email1, email2, email3]);
+        });
+
+        it('no-all skips remaining emails without prompting', async () => {
+            const email1 = { id: '1', from: 'a@test.com', subject: 'A', _action: 'delete', labels: ['spam'] };
+            const email2 = { id: '2', from: 'b@test.com', subject: 'B', _action: 'delete', labels: ['spam'] };
+            const trashCleaner = {
+                findTrash: sinon.stub().resolves([email1, email2]),
+                processEmails: sinon.stub().resolves()
+            };
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            const promptStub = sandbox.stub(cli, '_promptAction');
+            promptStub.onCall(0).resolves('no-all');
+
+            await cli._runInteractive(trashCleaner);
+
+            sinon.assert.calledOnce(promptStub);
+            sinon.assert.notCalled(trashCleaner.processEmails);
+        });
+
+        it('shows rule name for each email', async () => {
+            const email = { id: '1', from: 'spam@test.com', subject: 'Win!', _action: 'delete', _rule: 'Casino spam', labels: ['spam'] };
+            const trashCleaner = {
+                findTrash: sinon.stub().resolves([email]),
+                processEmails: sinon.stub().resolves()
+            };
+
+            sandbox.stub(console, 'log');
+            cli = new Cli();
+            sandbox.stub(cli, '_promptAction').resolves('yes');
+
+            await cli._runInteractive(trashCleaner);
+
+            const logCalls = console.log.args.map(a => a[0]);
+            assert.isTrue(logCalls.some(msg => msg && msg.includes('Casino spam')));
         });
 
         it('does nothing when all declined', async () => {
@@ -215,7 +271,7 @@ describe('Cli', () => {
 
             sandbox.stub(console, 'log');
             cli = new Cli();
-            sandbox.stub(cli, '_confirm').resolves(false);
+            sandbox.stub(cli, '_promptAction').resolves('no');
 
             await cli._runInteractive(trashCleaner);
 
