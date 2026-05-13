@@ -61,6 +61,13 @@ class ConsoleProgressReporter extends ProgressReporter {
     }
 
     /**
+     * An event that fires when evaluating an email against rules.
+     */
+    onEvaluatingEmail(current: number, total: number): void {
+        this._update(`Evaluating emails... (${current}/${total})`);
+    }
+
+    /**
      * An event that fires when trash emails are being deleted.
      */
     onDeletingTrash(): void {

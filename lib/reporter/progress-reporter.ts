@@ -26,6 +26,11 @@ class ProgressReporter {
     onTrashEmailsIdentified(_emails: Email[]): void { }
 
     /**
+     * An event that fires when evaluating an email against rules.
+     */
+    onEvaluatingEmail(_current: number, _total: number): void { }
+
+    /**
      * An event that fires when trash emails are being deleted.
      */
     onDeletingTrash(): void { }

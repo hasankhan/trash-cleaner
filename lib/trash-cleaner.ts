@@ -377,7 +377,9 @@ class TrashCleaner {
             : normalized;
 
         const trashEmails: Email[] = [];
-        for (const email of toEvaluate) {
+        for (let i = 0; i < toEvaluate.length; i++) {
+            this._reporter.onEvaluatingEmail(i + 1, toEvaluate.length);
+            const email = toEvaluate[i]!;
             if (await this._isTrashEmail(email)) {
                 trashEmails.push(email);
             }
