@@ -42,9 +42,10 @@ describe('TrashKeyword', () => {
       assert.equal(keyword.type, 'keyword');
     })
 
-    it('accepts llm type', () => {
-      const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'delete', 'llm');
+    it('accepts llm type with provider', () => {
+      const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'delete', 'llm', undefined, 'claude');
       assert.equal(keyword.type, 'llm');
+      assert.equal(keyword.llm, 'claude');
     })
   })
 });
@@ -693,25 +694,26 @@ describe('TrashCleanerFactory', () => {
 });
 
 describe('LlmTrashRule', () => {
+  const mockProvider = { command: 'echo', args: ['{{prompt}}'] };
+
   it('stores label and action from keyword', () => {
-    const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'archive', 'llm');
-    const rule = new LlmTrashRule(keyword);
+    const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'archive', 'llm', undefined, 'claude');
+    const rule = new LlmTrashRule(keyword, mockProvider);
     assert.equal(rule.label, 'marketing email');
     assert.equal(rule.action, 'archive');
     assert.deepEqual(rule.labels, ['*']);
   });
 
   it('defaults action to delete', () => {
-    const keyword = new TrashKeyword('spam content', ['*'], ['inbox'], undefined, 'llm');
-    const rule = new LlmTrashRule(keyword);
+    const keyword = new TrashKeyword('spam content', ['*'], ['inbox'], undefined, 'llm', undefined, 'claude');
+    const rule = new LlmTrashRule(keyword, mockProvider);
     assert.equal(rule.action, 'delete');
   });
 
-  it('uses default threshold', async () => {
-    const { DEFAULT_THRESHOLD } = await import('../lib/classifier/llm-classifier.js');
-    const keyword = new TrashKeyword('promo', ['*'], ['*'], 'delete', 'llm');
-    const rule = new LlmTrashRule(keyword);
-    assert.equal(rule.threshold, DEFAULT_THRESHOLD);
+  it('stores provider config', () => {
+    const keyword = new TrashKeyword('promo', ['*'], ['*'], 'delete', 'llm', undefined, 'claude');
+    const rule = new LlmTrashRule(keyword, mockProvider);
+    assert.equal(rule.provider, mockProvider);
   });
 });
 
@@ -719,7 +721,7 @@ describe('TrashCleanerFactory with LLM rules', () => {
   it('parses llm type from config', async () => {
     const configStore = {
       getJson: sinon.stub().returns([
-        { value: 'marketing email', labels: '*', type: 'llm', action: 'archive' }
+        { value: 'marketing email', labels: '*', type: 'llm', llm: 'claude', action: 'archive' }
       ])
     };
     const factory = new TrashCleanerFactory(configStore, {}, false);
@@ -729,6 +731,7 @@ describe('TrashCleanerFactory with LLM rules', () => {
     assert.equal(keywords[0].type, 'llm');
     assert.equal(keywords[0].value, 'marketing email');
     assert.equal(keywords[0].action, 'archive');
+    assert.equal(keywords[0].llm, 'claude');
   });
 
   it('defaults type to keyword when not specified', async () => {
@@ -759,15 +762,110 @@ describe('TrashCleanerFactory with LLM rules', () => {
     }
   });
 
+  it('requires llm field for type llm', async () => {
+    const configStore = {
+      getJson: sinon.stub().returns([
+        { value: 'marketing', type: 'llm', labels: '*' }
+      ])
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+
+    try {
+      await factory.readKeywords();
+      assert.fail('should throw');
+    } catch (err) {
+      assert.match(err.message, /LLM rules require a "llm" field/);
+    }
+  });
+
   it('creates LlmTrashRule for llm type keywords', () => {
     const reporter = new ProgressReporter();
     const keywords = [
-      new TrashKeyword('marketing', ['*'], ['*'], 'archive', 'llm'),
+      new TrashKeyword('marketing', ['*'], ['*'], 'archive', 'llm', undefined, 'claude'),
       new TrashKeyword('casino', ['*'], ['*'], 'delete', 'keyword')
     ];
-    const cleaner = new TrashCleaner({}, keywords, reporter);
+    const llmProviders = { claude: { command: 'claude', args: ['--print', '{{prompt}}'] } };
+    const cleaner = new TrashCleaner({}, keywords, reporter, [], null, null, null, llmProviders);
     assert.instanceOf(cleaner._rules[0], LlmTrashRule);
     assert.notInstanceOf(cleaner._rules[1], LlmTrashRule);
+  });
+
+  it('throws when LLM provider not found', () => {
+    const reporter = new ProgressReporter();
+    const keywords = [
+      new TrashKeyword('marketing', ['*'], ['*'], 'archive', 'llm', undefined, 'missing')
+    ];
+    assert.throws(
+      () => new TrashCleaner({}, keywords, reporter, [], null, null, null, {}),
+      /LLM provider "missing" not found/
+    );
+  });
+});
+
+describe('TrashCleanerFactory.readLlmProviders', () => {
+  it('reads providers from config', async () => {
+    const configStore = {
+      getJson: sinon.stub().resolves({
+        claude: { command: 'claude', args: ['--print', '{{prompt}}'] }
+      })
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+    const providers = await factory.readLlmProviders();
+    assert.deepEqual(providers.claude, { command: 'claude', args: ['--print', '{{prompt}}'] });
+  });
+
+  it('returns empty object when file not found', async () => {
+    const configStore = {
+      getJson: sinon.stub().rejects(new Error('ENOENT'))
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+    const providers = await factory.readLlmProviders();
+    assert.deepEqual(providers, {});
+  });
+
+  it('rejects provider missing command', async () => {
+    const configStore = {
+      getJson: sinon.stub().resolves({
+        bad: { args: ['{{prompt}}'] }
+      })
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+    try {
+      await factory.readLlmProviders();
+      assert.fail('should throw');
+    } catch (err) {
+      assert.match(err.message, /missing a valid "command"/);
+    }
+  });
+
+  it('rejects provider missing args', async () => {
+    const configStore = {
+      getJson: sinon.stub().resolves({
+        bad: { command: 'echo' }
+      })
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+    try {
+      await factory.readLlmProviders();
+      assert.fail('should throw');
+    } catch (err) {
+      assert.match(err.message, /missing an "args" array/);
+    }
+  });
+
+  it('rejects provider args without prompt placeholder', async () => {
+    const configStore = {
+      getJson: sinon.stub().resolves({
+        bad: { command: 'echo', args: ['hello'] }
+      })
+    };
+    const factory = new TrashCleanerFactory(configStore, {}, false);
+    try {
+      await factory.readLlmProviders();
+      assert.fail('should throw');
+    } catch (err) {
+      assert.match(err.message, /must contain a "{{prompt}}" placeholder/);
+    }
   });
 });
 
@@ -785,14 +883,14 @@ describe('Rule title', () => {
   });
 
   it('LlmTrashRule uses title from keyword when provided', () => {
-    const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'archive', 'llm', 'Marketing emails');
-    const rule = new LlmTrashRule(keyword);
+    const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'archive', 'llm', 'Marketing emails', 'claude');
+    const rule = new LlmTrashRule(keyword, { command: 'echo', args: ['{{prompt}}'] });
     assert.equal(rule.title, 'Marketing emails');
   });
 
   it('LlmTrashRule defaults title to value when not provided', () => {
-    const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'archive', 'llm');
-    const rule = new LlmTrashRule(keyword);
+    const keyword = new TrashKeyword('marketing email', ['*'], ['*'], 'archive', 'llm', undefined, 'claude');
+    const rule = new LlmTrashRule(keyword, { command: 'echo', args: ['{{prompt}}'] });
     assert.equal(rule.title, 'marketing email');
   });
 

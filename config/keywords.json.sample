@@ -6,6 +6,6 @@
     { "value": "pharma", "fields": "subject,snippet", "labels": "spam,junk email" },
     { "value": "newsletter", "fields": "subject", "labels": "inbox", "action": "archive", "title": "Newsletters" },
     { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" },
-    { "value": "marketing email", "labels": "*", "type": "llm", "action": "archive", "title": "Marketing emails" },
-    { "value": "someone selling me something", "labels": "inbox", "type": "llm" }
+    { "value": "marketing or promotional email", "labels": "*", "type": "llm", "llm": "claude", "action": "archive", "title": "Marketing emails" },
+    { "value": "someone selling me something", "labels": "inbox", "type": "llm", "llm": "claude" }
 ]

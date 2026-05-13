@@ -179,6 +179,7 @@ describe('Integration: TrashCleanerFactory full flow', () => {
         ]);
         configStore.getJson.withArgs('allowlist.json').resolves(['vip@company\\.com']);
         configStore.getJson.withArgs('seen.json').resolves(null);
+        configStore.getJson.withArgs('llm-providers.json').resolves(null);
 
         const email1 = new Email();
         email1.id = '1';

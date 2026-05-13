@@ -109,7 +109,8 @@ Rules live in `keywords.json` in your config directory (`~/.config/trash-cleaner
 | `fields` | No | Comma-separated email fields to search: `from`, `subject`, `snippet`, `body`, or `*` for all. Default: `*` |
 | `labels` | No | Comma-separated folder/label names to scope the rule: `inbox`, `spam`, `trash`, `junk email`, or `*` for all. Default: `*` |
 | `action` | No | What to do with matches: `delete`, `archive`, or `mark-as-read`. Default: `delete` |
-| `type` | No | Rule type: `keyword` (regex, default) or `llm` (semantic similarity). |
+| `type` | No | Rule type: `keyword` (regex, default) or `llm` (external LLM classification). |
+| `llm` | For LLM rules | Name of the LLM provider (must match a key in `llm-providers.json`). |
 
 ### Keyword Rules (Regex)
 
@@ -129,21 +130,48 @@ Keyword rules use regular expressions to match email content. They are fast and 
 - **Match emoji in subject**: `{ "value": "[\\u{1F600}-\\u{1F64F}]", "fields": "subject", "labels": "*" }` — uses Unicode character ranges to match emoji.
 - Matching is **case-insensitive** and **diacritic-insensitive** (e.g., "café" matches "cafe").
 
-### LLM Rules (Semantic Similarity)
+### LLM Rules (External CLI)
 
-LLM rules use a local AI model to match emails by meaning rather than exact text. Write a natural language description of what you want to match. The model (~23MB, downloaded on first use) compares your description against each email's subject, snippet, and sender.
+LLM rules invoke an external AI tool (Claude, Copilot, Ollama, etc.) to classify emails by meaning. Write a natural language description of what you want to match — the tool decides if each email fits.
 
 ```json
 [
-    { "value": "marketing or promotional email", "labels": "*", "type": "llm", "action": "archive", "title": "Marketing emails" },
-    { "value": "someone selling me something", "labels": "inbox", "type": "llm" }
+    { "value": "marketing or promotional email", "labels": "*", "type": "llm", "llm": "claude", "action": "archive", "title": "Marketing emails" },
+    { "value": "someone selling me something", "labels": "inbox", "type": "llm", "llm": "claude" }
 ]
 ```
 
-- The `value` is a **description**, not a regex — write it like you'd describe the email to someone.
-- LLM rules are slower than keyword rules (~200ms per email) but can catch things regex can't.
-- The model runs **locally** on your device — no data is sent to any server.
-- The model is only downloaded if you have at least one LLM rule configured.
+#### LLM Provider Configuration
+
+Create `llm-providers.json` in your config directory (`~/.config/trash-cleaner/`):
+
+```json
+{
+    "claude": {
+        "command": "claude",
+        "args": ["--print", "{{prompt}}"]
+    },
+    "copilot": {
+        "command": "copilot-cli",
+        "args": ["-p", "{{prompt}}"]
+    },
+    "ollama": {
+        "command": "ollama",
+        "args": ["run", "llama3", "{{prompt}}"]
+    }
+}
+```
+
+Each provider needs:
+- `command` — the CLI executable name (must be in your PATH)
+- `args` — arguments array with `{{prompt}}` as a placeholder for the rendered prompt
+- `prompt` (optional) — custom prompt template; defaults to asking "does this email match?" with true/false response
+
+The `{{prompt}}` placeholder in args is replaced with the full prompt containing the rule description and email content. The tool must respond with "true" or "false".
+
+- LLM rules are slower than keyword rules (network call per email) but can catch things regex can't.
+- No data is sent to trash-cleaner servers — classification goes through your configured CLI tool.
+- Run `trash-cleaner init` to create a sample `llm-providers.json`.
 
 ### Scoping Rules with Labels and Fields
 
@@ -166,7 +194,7 @@ Use `fields` to limit which parts of an email are searched (keyword rules only):
     { "value": "casino|lottery|winner", "fields": "*", "labels": "spam,junk email", "title": "Gambling spam" },
     { "value": "unsubscribe", "fields": "body", "labels": "inbox", "action": "archive", "title": "Bulk mail" },
     { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" },
-    { "value": "marketing or promotional email", "labels": "inbox", "type": "llm", "action": "archive", "title": "Marketing emails" }
+    { "value": "marketing or promotional email", "labels": "inbox", "type": "llm", "llm": "claude", "action": "archive", "title": "Marketing emails" }
 ]
 ```
 
