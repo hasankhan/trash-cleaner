@@ -1,0 +1,15 @@
+# LLM provider configurations
+# Each provider defines how to invoke an external AI CLI tool
+# The {{prompt}} placeholder in args is replaced with the classification prompt
+
+claude:
+  command: claude
+  args: ["--print", "{{prompt}}"]
+
+copilot:
+  command: copilot-cli
+  args: ["-p", "{{prompt}}"]
+
+ollama:
+  command: ollama
+  args: ["run", "llama3", "{{prompt}}"]

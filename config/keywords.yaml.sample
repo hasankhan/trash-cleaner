@@ -1,0 +1,52 @@
+# Trash cleaner keyword rules
+# Each rule identifies emails to act on (delete, archive, or mark-as-read)
+
+# Delete everything in trash/deleted folders
+- value: "."
+  fields: "*"
+  labels: trash, deleted items
+  title: Clean trash folder
+
+# Keyword rules — regex patterns matched against email fields
+- value: credit
+  fields: subject
+  labels: spam, junk email
+  title: Credit spam
+
+- value: casino
+  fields: "*"
+  labels: "*"
+  title: Casino spam
+
+- value: lucky|winner
+  fields: body
+  labels: spam, junk email
+  title: Lottery scam
+
+- value: pharma
+  fields: subject, snippet
+  labels: spam, junk email
+
+- value: newsletter
+  fields: subject
+  labels: inbox
+  action: archive
+  title: Newsletters
+
+- value: notification
+  fields: subject
+  labels: inbox
+  action: mark-as-read
+
+# LLM rules — natural language descriptions classified by an external AI tool
+- value: marketing or promotional email
+  labels: "*"
+  type: llm
+  llm: claude
+  action: archive
+  title: Marketing emails
+
+- value: someone selling me something
+  labels: inbox
+  type: llm
+  llm: claude

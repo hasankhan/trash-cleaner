@@ -1,0 +1,6 @@
+# Allowlist — sender patterns protected from all actions
+# Each entry is a regex matched against the sender's email address (case-insensitive)
+
+# Examples:
+# - boss@company\.com
+# - .*@important-domain\.org

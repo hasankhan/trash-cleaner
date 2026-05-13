@@ -98,7 +98,9 @@ This creates starter `keywords.json`, `imap.credentials.json`, `gmail.credential
 
 ## Configuring Rules
 
-Rules live in `keywords.json` in your config directory (`~/.config/trash-cleaner/` by default). The file contains a JSON array of rule objects. Each rule tells trash-cleaner which emails to match and what to do with them.
+Rules live in `keywords.yaml` in your config directory (`~/.config/trash-cleaner/` by default). The file is a YAML list of rule objects. Each rule tells trash-cleaner which emails to match and what to do with them.
+
+> **Note:** JSON config files (`keywords.json`, etc.) are also supported for backward compatibility. If both exist, YAML takes priority.
 
 ### Rule Fields
 
@@ -110,56 +112,74 @@ Rules live in `keywords.json` in your config directory (`~/.config/trash-cleaner
 | `labels` | No | Comma-separated folder/label names to scope the rule: `inbox`, `spam`, `trash`, `junk email`, or `*` for all. Default: `*` |
 | `action` | No | What to do with matches: `delete`, `archive`, or `mark-as-read`. Default: `delete` |
 | `type` | No | Rule type: `keyword` (regex, default) or `llm` (external LLM classification). |
-| `llm` | For LLM rules | Name of the LLM provider (must match a key in `llm-providers.json`). |
+| `llm` | For LLM rules | Name of the LLM provider (must match a key in `llm-providers.yaml`). |
 
 ### Keyword Rules (Regex)
 
 Keyword rules use regular expressions to match email content. They are fast and precise.
 
-```json
-[
-    { "value": "casino", "fields": "*", "labels": "*", "title": "Casino spam" },
-    { "value": "credit|loan", "fields": "subject", "labels": "spam,junk email", "title": "Credit scams" },
-    { "value": "newsletter", "fields": "subject", "labels": "inbox", "action": "archive", "title": "Newsletters" },
-    { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" }
-]
+```yaml
+- value: casino
+  fields: "*"
+  labels: "*"
+  title: Casino spam
+
+- value: credit|loan
+  fields: subject
+  labels: spam, junk email
+  title: Credit scams
+
+- value: newsletter
+  fields: subject
+  labels: inbox
+  action: archive
+  title: Newsletters
+
+- value: notification
+  fields: subject
+  labels: inbox
+  action: mark-as-read
 ```
 
-- **Delete all trash**: `{ "value": ".", "fields": "*", "labels": "trash,deleted items" }` — the `.` regex matches any character, so this deletes everything in the trash folder.
-- **Match multiple words**: `{ "value": "lucky|winner|prize", "fields": "body", "labels": "spam" }` — uses regex `|` (OR) to match any of the words.
-- **Match emoji in subject**: `{ "value": "[\\u{1F600}-\\u{1F64F}]", "fields": "subject", "labels": "*" }` — uses Unicode character ranges to match emoji.
+- **Delete all trash**: `value: "."` with `labels: trash, deleted items` — the `.` regex matches any character.
+- **Match multiple words**: `value: lucky|winner|prize` — uses regex `|` (OR) to match any of the words.
+- **Match emoji in subject**: `value: "[\\u{1F600}-\\u{1F64F}]"` — uses Unicode character ranges.
 - Matching is **case-insensitive** and **diacritic-insensitive** (e.g., "café" matches "cafe").
 
 ### LLM Rules (External CLI)
 
 LLM rules invoke an external AI tool (Claude, Copilot, Ollama, etc.) to classify emails by meaning. Write a natural language description of what you want to match — the tool decides if each email fits.
 
-```json
-[
-    { "value": "marketing or promotional email", "labels": "*", "type": "llm", "llm": "claude", "action": "archive", "title": "Marketing emails" },
-    { "value": "someone selling me something", "labels": "inbox", "type": "llm", "llm": "claude" }
-]
+```yaml
+- value: marketing or promotional email
+  labels: "*"
+  type: llm
+  llm: claude
+  action: archive
+  title: Marketing emails
+
+- value: someone selling me something
+  labels: inbox
+  type: llm
+  llm: claude
 ```
 
 #### LLM Provider Configuration
 
-Create `llm-providers.json` in your config directory (`~/.config/trash-cleaner/`):
+Create `llm-providers.yaml` in your config directory (`~/.config/trash-cleaner/`):
 
-```json
-{
-    "claude": {
-        "command": "claude",
-        "args": ["--print", "{{prompt}}"]
-    },
-    "copilot": {
-        "command": "copilot-cli",
-        "args": ["-p", "{{prompt}}"]
-    },
-    "ollama": {
-        "command": "ollama",
-        "args": ["run", "llama3", "{{prompt}}"]
-    }
-}
+```yaml
+claude:
+  command: claude
+  args: ["--print", "{{prompt}}"]
+
+copilot:
+  command: copilot-cli
+  args: ["-p", "{{prompt}}"]
+
+ollama:
+  command: ollama
+  args: ["run", "llama3", "{{prompt}}"]
 ```
 
 Each provider needs:
@@ -171,7 +191,7 @@ The `{{prompt}}` placeholder in args is replaced with the full prompt containing
 
 - LLM rules are slower than keyword rules (network call per email) but can catch things regex can't.
 - No data is sent to trash-cleaner servers — classification goes through your configured CLI tool.
-- Run `trash-cleaner init` to create a sample `llm-providers.json`.
+- Run `trash-cleaner init` to create a sample `llm-providers.yaml`.
 
 ### Scoping Rules with Labels and Fields
 
@@ -188,14 +208,34 @@ Use `fields` to limit which parts of an email are searched (keyword rules only):
 
 ### Example Configuration
 
-```json
-[
-    { "value": ".", "fields": "*", "labels": "trash,deleted items", "title": "Clean trash folder" },
-    { "value": "casino|lottery|winner", "fields": "*", "labels": "spam,junk email", "title": "Gambling spam" },
-    { "value": "unsubscribe", "fields": "body", "labels": "inbox", "action": "archive", "title": "Bulk mail" },
-    { "value": "notification", "fields": "subject", "labels": "inbox", "action": "mark-as-read" },
-    { "value": "marketing or promotional email", "labels": "inbox", "type": "llm", "llm": "claude", "action": "archive", "title": "Marketing emails" }
-]
+```yaml
+- value: "."
+  fields: "*"
+  labels: trash, deleted items
+  title: Clean trash folder
+
+- value: casino|lottery|winner
+  fields: "*"
+  labels: spam, junk email
+  title: Gambling spam
+
+- value: unsubscribe
+  fields: body
+  labels: inbox
+  action: archive
+  title: Bulk mail
+
+- value: notification
+  fields: subject
+  labels: inbox
+  action: mark-as-read
+
+- value: marketing or promotional email
+  labels: inbox
+  type: llm
+  llm: claude
+  action: archive
+  title: Marketing emails
 ```
 
 Rules are evaluated in order — the **first matching rule wins**. Place more specific rules before general ones.
