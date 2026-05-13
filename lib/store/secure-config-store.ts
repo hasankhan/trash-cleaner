@@ -39,11 +39,19 @@ class SecureConfigStore extends ConfigStore {
      * Reads JSON config. Tries keychain first for sensitive keys, then file.
      */
     async getJson(key: string): Promise<unknown> {
-        const value = await this.get(key);
-        if (value === null || value === undefined) {
-            return null;
+        // For sensitive keys, try keychain first
+        if (this._isSensitive(key)) {
+            try {
+                const value = await this._keychain.getPassword(SERVICE_NAME, key);
+                if (value) {
+                    return JSON.parse(value);
+                }
+            } catch {
+                // Keychain not available, fall through to file store
+            }
         }
-        return JSON.parse(value.toString());
+        // Delegate to file store's getJson which handles YAML/JSON fallback
+        return this._fileStore.getJson(key);
     }
 
     /**

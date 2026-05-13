@@ -66,7 +66,7 @@ describe('SecureConfigStore', () => {
 
         it('should return null when no value found', async () => {
             mockKeychain.getPassword.resolves(null);
-            fileStore.get.resolves(null);
+            fileStore.getJson.resolves(null);
             const result = await store.getJson('imap.credentials.json');
             expect(result).to.be.null;
         });
