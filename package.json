@@ -48,8 +48,8 @@
   },
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
-    "test": "c8 mocha --recursive --import tsx",
-    "coverage": "c8 --reporter=lcov mocha --recursive --import tsx",
+    "test": "c8 mocha --recursive --import=tsx",
+    "coverage": "c8 --reporter=lcov mocha --recursive --import=tsx",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

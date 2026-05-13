@@ -1,6 +1,13 @@
 import { createHash } from 'crypto';
+import type { ConfigStore } from '../store/config-store.js';
+import type { Email } from '../client/email-client.js';
 
 const FILE_SEEN = 'seen.json';
+
+interface SeenData {
+    rulesHash: string;
+    lastRun: string;
+}
 
 /**
  * Tracks the last completed run timestamp so that subsequent runs only
@@ -10,14 +17,13 @@ const FILE_SEEN = 'seen.json';
  * Stored format: `{ rulesHash: string, lastRun: string (ISO-8601) }`
  */
 class SeenEmailCache {
-    /**
-     * @param {import('../store/config-store.js').ConfigStore} configStore
-     * @param {string} rulesHash SHA-256 hex digest of the current rules.
-     */
-    constructor(configStore, rulesHash) {
+    private readonly _configStore: ConfigStore;
+    private readonly _rulesHash: string;
+    private _lastRun: Date | null;
+
+    constructor(configStore: ConfigStore, rulesHash: string) {
         this._configStore = configStore;
         this._rulesHash = rulesHash;
-        /** @type {Date|null} */
         this._lastRun = null;
     }
 
@@ -26,8 +32,8 @@ class SeenEmailCache {
      * the current one the timestamp is discarded and all emails will be
      * re-evaluated.
      */
-    async load() {
-        let data;
+    async load(): Promise<void> {
+        let data: unknown;
         try {
             data = await this._configStore.getJson(FILE_SEEN);
         } catch {
@@ -39,24 +45,23 @@ class SeenEmailCache {
             return;
         }
 
-        if (data.rulesHash !== this._rulesHash) {
+        const seenData = data as SeenData;
+
+        if (seenData.rulesHash !== this._rulesHash) {
             // Rules changed — invalidate.
             return;
         }
 
-        if (data.lastRun) {
-            this._lastRun = new Date(data.lastRun);
+        if (seenData.lastRun) {
+            this._lastRun = new Date(seenData.lastRun);
         }
     }
 
     /**
      * Returns true if the email was received before the last completed run
      * and therefore does not need to be re-evaluated.
-     *
-     * @param {import('../client/email-client.js').Email} email
-     * @returns {boolean}
      */
-    isSeen(email) {
+    isSeen(email: Email): boolean {
         if (!this._lastRun || !email.date) {
             return false;
         }
@@ -66,7 +71,7 @@ class SeenEmailCache {
     /**
      * Persists the current time as the last-run timestamp.
      */
-    async save() {
+    async save(): Promise<void> {
         await this._configStore.putJson(FILE_SEEN, {
             rulesHash: this._rulesHash,
             lastRun: new Date().toISOString()
@@ -75,20 +80,15 @@ class SeenEmailCache {
 
     /**
      * Returns the last-run timestamp, or null if no previous run.
-     *
-     * @returns {Date|null}
      */
-    get lastRun() {
+    get lastRun(): Date | null {
         return this._lastRun;
     }
 
     /**
      * Computes a SHA-256 hash of a keywords configuration array.
-     *
-     * @param {object[]} keywords Raw keywords array from config.
-     * @returns {string} Hex digest.
      */
-    static computeRulesHash(keywords) {
+    static computeRulesHash(keywords: object[]): string {
         const json = JSON.stringify(keywords);
         return createHash('sha256').update(json).digest('hex');
     }

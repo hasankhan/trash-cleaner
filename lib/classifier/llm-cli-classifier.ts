@@ -15,27 +15,30 @@ From: {{from}}
 Subject: {{subject}}
 Snippet: {{snippet}}`;
 
+interface LlmEmail {
+    from?: string;
+    subject?: string;
+    snippet?: string;
+}
+
+interface LlmProvider {
+    command: string;
+    args: string[];
+    prompt?: string;
+}
+
 /**
  * Renders a prompt template by replacing placeholders.
- *
- * @param {string} template The prompt template with {{placeholders}}.
- * @param {object} values Key-value pairs for replacement.
- * @returns {string} The rendered prompt.
  */
-function renderPrompt(template, values) {
-    return template.replace(/\{\{(\w+)\}\}/g, (_, key) =>
+function renderPrompt(template: string, values: Record<string, string | undefined>): string {
+    return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) =>
         values[key] !== undefined ? String(values[key]) : '');
 }
 
 /**
  * Classifies an email by invoking an external LLM CLI tool.
- *
- * @param {object} email The email object with from, subject, snippet fields.
- * @param {string} ruleDescription The natural language rule description.
- * @param {object} provider The LLM provider config (command, args, optional prompt).
- * @returns {Promise<boolean>} True if the LLM says the email matches.
  */
-async function classifyWithCli(email, ruleDescription, provider) {
+async function classifyWithCli(email: LlmEmail, ruleDescription: string, provider: LlmProvider): Promise<boolean> {
     const promptTemplate = provider.prompt || DEFAULT_PROMPT;
     const prompt = renderPrompt(promptTemplate, {
         rule: ruleDescription,
@@ -56,12 +59,14 @@ async function classifyWithCli(email, ruleDescription, provider) {
         const response = stdout.trim().toLowerCase();
         return response === 'true' || response.startsWith('true');
     } catch (err) {
+        const error = err as NodeJS.ErrnoException;
         // If the CLI tool fails, treat as non-match (don't delete emails on error)
-        const msg = err.code === 'ENOENT'
+        const msg = error.code === 'ENOENT'
             ? `LLM command not found: "${provider.command}". Is it installed and in PATH?`
-            : `LLM command failed: ${err.message}`;
+            : `LLM command failed: ${error.message}`;
         throw new Error(msg);
     }
 }
 
 export { classifyWithCli, renderPrompt, DEFAULT_PROMPT };
+export type { LlmEmail, LlmProvider };

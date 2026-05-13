@@ -4,23 +4,32 @@ import path from 'path';
 const LOG_FILE = 'action-log.json';
 const MAX_ENTRIES = 10;
 
+interface ActionEntry {
+    id: string;
+    action: string;
+    from: string;
+    subject: string;
+}
+
+interface ActionBatch {
+    timestamp: string;
+    entries: ActionEntry[];
+}
+
 /**
  * Records processed email actions for undo support.
  */
 class ActionLog {
-    /**
-     * @param {string} configDir Path to the config directory.
-     */
-    constructor(configDir) {
+    private readonly _filePath: string;
+
+    constructor(configDir: string) {
         this._filePath = path.join(configDir, LOG_FILE);
     }
 
     /**
      * Records a batch of processed emails.
-     *
-     * @param {object[]} entries Array of { id, action, from, subject }.
      */
-    record(entries) {
+    record(entries: ActionEntry[]): void {
         if (!entries || entries.length === 0) return;
 
         const log = this._read();
@@ -39,18 +48,16 @@ class ActionLog {
 
     /**
      * Gets the most recent batch of actions.
-     *
-     * @returns {object|null} The last batch or null if empty.
      */
-    getLastBatch() {
+    getLastBatch(): ActionBatch | null {
         const log = this._read();
-        return log.length > 0 ? log[0] : null;
+        return log.length > 0 ? log[0]! : null;
     }
 
     /**
      * Removes the most recent batch from the log.
      */
-    removeLastBatch() {
+    removeLastBatch(): void {
         const log = this._read();
         if (log.length > 0) {
             log.shift();
@@ -60,13 +67,11 @@ class ActionLog {
 
     /**
      * Reads the log file.
-     *
-     * @returns {object[]} The log entries.
      */
-    _read() {
+    _read(): ActionBatch[] {
         try {
             const data = fs.readFileSync(this._filePath, 'utf8');
-            return JSON.parse(data);
+            return JSON.parse(data) as ActionBatch[];
         } catch {
             return [];
         }
@@ -74,3 +79,4 @@ class ActionLog {
 }
 
 export { ActionLog, LOG_FILE };
+export type { ActionEntry, ActionBatch };

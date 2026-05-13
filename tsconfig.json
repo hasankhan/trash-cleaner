@@ -1,16 +1,20 @@
 {
   "compilerOptions": {
-    "checkJs": true,
-    "allowJs": true,
-    "noEmit": true,
-    "strict": false,
-    "esModuleInterop": true,
-    "moduleResolution": "node16",
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "node16",
+    "moduleResolution": "node16",
+    "outDir": "dist",
+    "rootDir": ".",
+    "declaration": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "types": ["node"],
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUncheckedIndexedAccess": true,
+    "sourceMap": true
   },
-  "include": ["lib/**/*.js"],
-  "exclude": ["node_modules", "test", "coverage"]
+  "include": ["lib/**/*.ts", "index.ts"],
+  "exclude": ["node_modules", "test", "coverage", "dist"]
 }
