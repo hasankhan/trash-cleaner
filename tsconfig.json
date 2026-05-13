@@ -12,6 +12,6 @@
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true
   },
-  "include": ["lib/**/*.ts", "index.ts"],
+  "include": ["lib/**/*.ts", "index.ts", "types/**/*.d.ts"],
   "exclude": ["node_modules", "test", "coverage", "dist"]
 }
