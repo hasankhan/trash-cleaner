@@ -3,19 +3,53 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { Email, EmailClient, EmailClientFactory } from './email-client.js';
 import { retry } from '../utils/retry.js';
-
-/** @typedef {import('../store/config-store.js').ConfigStore} ConfigStore */
+import type { ConfigStore } from '../store/config-store.js';
 
 const DEFAULT_ARCHIVE_FOLDER = 'Archive';
+
+interface ImapFileNames {
+    credentialsFile: string;
+}
+
+interface ImapConnectionAuth {
+    user: string;
+    pass: string;
+}
+
+interface ImapConnectionConfig {
+    host: string;
+    port: number;
+    auth: ImapConnectionAuth;
+    secure: boolean;
+}
+
+interface ImapCredentials {
+    host: string;
+    port?: number;
+    secure?: boolean;
+    user: string;
+    password: string;
+    archiveFolder?: string;
+}
+
+interface ImapMessage {
+    uid: number;
+    flags: Set<string>;
+    source: Buffer;
+    envelope?: unknown;
+}
+
+interface ImapMailbox {
+    path: string;
+    flags?: Set<string>;
+    specialUse?: string;
+}
 
 /**
  * Returns the credential file name for an account.
  * Default account uses the original file name for backward compatibility.
- *
- * @param {string} account The account name.
- * @returns {{ credentialsFile: string }}
  */
-function getImapFileNames(account) {
+function getImapFileNames(account: string): ImapFileNames {
     if (!account || account === 'default') {
         return { credentialsFile: 'imap.credentials.json' };
     }
@@ -26,19 +60,13 @@ function getImapFileNames(account) {
  * An IMAP client to get unread emails from mailbox.
  */
 class ImapClient extends EmailClient {
+    private _connectionConfig: ImapConnectionConfig;
+    private _archiveFolder: string;
+
     /**
      * Constructs the {ImapClient} instance.
-     *
-     * @param {object} connectionConfig The IMAP connection config.
-     * @param {string} connectionConfig.host The IMAP server host.
-     * @param {number} connectionConfig.port The IMAP server port.
-     * @param {object} connectionConfig.auth The auth credentials.
-     * @param {string} connectionConfig.auth.user The username.
-     * @param {string} connectionConfig.auth.pass The password.
-     * @param {boolean} connectionConfig.secure Whether to use TLS.
-     * @param {string} [archiveFolder] The folder to archive messages to.
      */
-    constructor(connectionConfig, archiveFolder) {
+    constructor(connectionConfig: ImapConnectionConfig, archiveFolder?: string) {
         super();
         this._connectionConfig = connectionConfig;
         this._archiveFolder = archiveFolder || DEFAULT_ARCHIVE_FOLDER;
@@ -46,16 +74,13 @@ class ImapClient extends EmailClient {
 
     /**
      * Gets the unread emails from the mailbox.
-     *
-     * @param {Date} [since] Optional date to only fetch emails received after.
-     * @returns {Promise<Email[]>} A list of unread emails.
      */
-    async getUnreadEmails(since) {
+    async getUnreadEmails(since?: Date): Promise<Email[]> {
         const client = this._createClient();
         await retry(() => client.connect());
         try {
             const folders = await this._listFolders(client);
-            const allEmails = [];
+            const allEmails: Email[] = [];
 
             for (const folder of folders) {
                 const emails = await this._getUnreadFromFolder(client, folder, since);
@@ -70,13 +95,10 @@ class ImapClient extends EmailClient {
 
     /**
      * Lists all scannable mailbox folders.
-     *
-     * @param {ImapFlow} client The IMAP client.
-     * @returns {Promise<string[]>} List of folder paths.
      */
-    async _listFolders(client) {
-        const list = await client.list();
-        const folders = [];
+    private async _listFolders(client: ImapFlow): Promise<string[]> {
+        const list: ImapMailbox[] = await client.list() as ImapMailbox[];
+        const folders: string[] = [];
         for (const mailbox of list) {
             // Skip folders that can't be selected (e.g. [Gmail] parent)
             if (mailbox.flags?.has('\\Noselect')) {
@@ -95,21 +117,16 @@ class ImapClient extends EmailClient {
 
     /**
      * Gets unread emails from a specific folder.
-     *
-     * @param {ImapFlow} client The IMAP client.
-     * @param {string} folder The folder path.
-     * @param {Date} [since] Optional date to only fetch emails received after.
-     * @returns {Promise<Email[]>} List of unread emails.
      */
-    async _getUnreadFromFolder(client, folder, since) {
-        let lock;
+    private async _getUnreadFromFolder(client: ImapFlow, folder: string, since?: Date): Promise<Email[]> {
+        let lock: { release: () => void };
         try {
             lock = await client.getMailboxLock(folder);
         } catch {
             return [];
         }
         try {
-            const searchCriteria = { seen: false };
+            const searchCriteria: { seen: boolean; since?: Date } = { seen: false };
             if (since) {
                 searchCriteria.since = since;
             }
@@ -118,12 +135,13 @@ class ImapClient extends EmailClient {
                 return [];
             }
 
-            const emails = [];
-            for await (const msg of client.fetch({ uid: uids }, {
+            const emails: Email[] = [];
+            const fetchIterator = client.fetch({ uid: uids } as unknown as string, {
                 envelope: true,
                 source: true,
                 uid: true
-            })) {
+            });
+            for await (const msg of fetchIterator as AsyncIterable<ImapMessage>) {
                 const parsed = await simpleParser(msg.source);
                 const email = new Email();
                 email.id = String(msg.uid);
@@ -145,10 +163,8 @@ class ImapClient extends EmailClient {
 
     /**
      * Deletes the emails.
-     *
-     * @param {Email[]} emails A list of emails to delete.
      */
-    async deleteEmails(emails) {
+    async deleteEmails(emails: Email[]): Promise<void> {
         const byFolder = this._groupByFolder(emails);
         const client = this._createClient();
         await retry(() => client.connect());
@@ -157,7 +173,7 @@ class ImapClient extends EmailClient {
                 const uids = folderEmails.map(e => Number(e.id));
                 const lock = await client.getMailboxLock(folder);
                 try {
-                    await retry(() => client.messageDelete(uids, { uid: true }));
+                    await retry(() => client.messageDelete(uids as unknown as string, { uid: true }));
                 } finally {
                     lock.release();
                 }
@@ -171,10 +187,8 @@ class ImapClient extends EmailClient {
 
     /**
      * Archives emails by moving them to the archive folder.
-     *
-     * @param {Email[]} emails A list of emails to archive.
      */
-    async archiveEmails(emails) {
+    async archiveEmails(emails: Email[]): Promise<void> {
         const byFolder = this._groupByFolder(emails);
         const client = this._createClient();
         await retry(() => client.connect());
@@ -183,7 +197,7 @@ class ImapClient extends EmailClient {
                 const uids = folderEmails.map(e => Number(e.id));
                 const lock = await client.getMailboxLock(folder);
                 try {
-                    await retry(() => client.messageMove(uids, this._archiveFolder, { uid: true }));
+                    await retry(() => client.messageMove(uids as unknown as string, this._archiveFolder, { uid: true }));
                 } finally {
                     lock.release();
                 }
@@ -197,10 +211,8 @@ class ImapClient extends EmailClient {
 
     /**
      * Marks emails as read by adding the \\Seen flag.
-     *
-     * @param {Email[]} emails A list of emails to mark as read.
      */
-    async markAsReadEmails(emails) {
+    async markAsReadEmails(emails: Email[]): Promise<void> {
         const byFolder = this._groupByFolder(emails);
         const client = this._createClient();
         await retry(() => client.connect());
@@ -209,7 +221,7 @@ class ImapClient extends EmailClient {
                 const uids = folderEmails.map(e => Number(e.id));
                 const lock = await client.getMailboxLock(folder);
                 try {
-                    await retry(() => client.messageFlagsAdd(uids, ['\\Seen'], { uid: true }));
+                    await retry(() => client.messageFlagsAdd(uids as unknown as string, ['\\Seen'], { uid: true }));
                 } finally {
                     lock.release();
                 }
@@ -223,10 +235,8 @@ class ImapClient extends EmailClient {
 
     /**
      * Restores previously processed emails. Not supported in IMAP mode.
-     *
-     * @param {string[]} _emailIds A list of email IDs to restore.
      */
-    async restoreEmails(_emailIds) {
+    async restoreEmails(_emailIds: string[]): Promise<void> {
         throw new Error(
             'Undo is not supported in IMAP mode. Deleted messages cannot be restored via IMAP. ' +
             'Use --service gmail or --service outlook for undo support.'
@@ -235,13 +245,9 @@ class ImapClient extends EmailClient {
 
     /**
      * Extracts labels from IMAP message flags and folder name.
-     *
-     * @param {object} msg The IMAP message object.
-     * @param {string} folder The mailbox folder path.
-     * @returns {string[]} The extracted labels.
      */
-    _extractLabels(msg, folder) {
-        const labels = [];
+    private _extractLabels(msg: ImapMessage, folder: string): string[] {
+        const labels: string[] = [];
         if (msg.flags) {
             for (const flag of msg.flags) {
                 if (flag === '\\Flagged') {
@@ -273,28 +279,23 @@ class ImapClient extends EmailClient {
 
     /**
      * Groups emails by their folder.
-     *
-     * @param {Email[]} emails The emails to group.
-     * @returns {Map<string, Email[]>} Map of folder to emails.
      */
-    _groupByFolder(emails) {
-        const map = new Map();
+    private _groupByFolder(emails: Email[]): Map<string, Email[]> {
+        const map = new Map<string, Email[]>();
         for (const email of emails) {
             const folder = email._folder || 'INBOX';
             if (!map.has(folder)) {
                 map.set(folder, []);
             }
-            map.get(folder).push(email);
+            map.get(folder)!.push(email);
         }
         return map;
     }
 
     /**
      * Creates a new ImapFlow client instance.
-     *
-     * @returns {ImapFlow} The IMAP client.
      */
-    _createClient() {
+    private _createClient(): ImapFlow {
         return new ImapFlow({
             ...this._connectionConfig,
             logger: false
@@ -306,13 +307,13 @@ class ImapClient extends EmailClient {
  * Factory for ImapClient objects.
  */
 class ImapClientFactory extends EmailClientFactory {
+    configStore: ConfigStore;
+    private _credentialsFile: string;
+
     /**
      * Creates an instance of ImapClientFactory.
-     *
-     * @param {ConfigStore} configStore The configuration store.
-     * @param {string} account The account name.
      */
-    constructor(configStore, account) {
+    constructor(configStore: ConfigStore, account: string) {
         super();
         this.configStore = configStore;
         const fileNames = getImapFileNames(account);
@@ -321,15 +322,11 @@ class ImapClientFactory extends EmailClientFactory {
 
     /**
      * Creates an instance of ImapClient.
-     *
-     * @param {boolean} reconfig Reconfigure auth secrets.
-     * @param {boolean} _launch Not used for IMAP.
-     * @returns {Promise<ImapClient>} The IMAP client.
      */
-    async getInstance(reconfig, _launch) {
-        let credentials;
+    async getInstance(reconfig: boolean, _launch: boolean): Promise<ImapClient> {
+        let credentials: ImapCredentials | null;
         try {
-            credentials = await this.configStore.getJson(this._credentialsFile);
+            credentials = await this.configStore.getJson(this._credentialsFile) as ImapCredentials | null;
         } catch {
             credentials = null;
         }
@@ -339,7 +336,7 @@ class ImapClientFactory extends EmailClientFactory {
             await this.configStore.putJson(this._credentialsFile, credentials);
         }
 
-        const connectionConfig = {
+        const connectionConfig: ImapConnectionConfig = {
             host: credentials.host,
             port: credentials.port || 993,
             secure: credentials.secure !== false,
@@ -354,16 +351,14 @@ class ImapClientFactory extends EmailClientFactory {
 
     /**
      * Prompts the user interactively for IMAP credentials.
-     *
-     * @returns {Promise<object>} The credentials object.
      */
-    async _promptCredentials() {
+    private async _promptCredentials(): Promise<ImapCredentials> {
         const rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout
         });
 
-        const ask = (question) => new Promise(resolve =>
+        const ask = (question: string): Promise<string> => new Promise(resolve =>
             rl.question(question, resolve));
 
         try {
