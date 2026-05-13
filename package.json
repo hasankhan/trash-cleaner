@@ -8,7 +8,7 @@
     "spam-filtering"
   ],
   "type": "module",
-  "exports": "./index.js",
+  "exports": "./index.ts",
   "preferGlobal": true,
   "dependencies": {
     "@azure/msal-node": "^1.3.0",
@@ -47,6 +47,7 @@
     "trash-cleaner": "./bin/trash-cleaner"
   },
   "scripts": {
+    "build": "tsc",
     "postinstall": "node scripts/postinstall.js",
     "test": "c8 mocha --recursive --import=tsx",
     "coverage": "c8 --reporter=lcov mocha --recursive --import=tsx",

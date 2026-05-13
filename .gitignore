@@ -9,4 +9,4 @@ action-log.json
 .vs
 .vscode
 .nyc_output
-coverage/
+coverage/dist/

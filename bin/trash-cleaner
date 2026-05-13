@@ -1,4 +1,9 @@
 #!/usr/bin/env node
 
-// execute the main script
-import '../index.js';
+// Use tsx to run TypeScript directly
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register('tsx/esm', pathToFileURL(import.meta.url));
+
+await import('../index.ts');

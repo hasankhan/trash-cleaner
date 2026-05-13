@@ -10,6 +10,7 @@ class Email {
     body: string;
     date: Date | null;
     _action: string | undefined;
+    _rule: string | undefined;
     _folder: string;
 
     constructor() {
@@ -21,6 +22,7 @@ class Email {
         this.body = '';
         this.date = null;
         this._action = undefined;
+        this._rule = undefined;
         this._folder = 'INBOX';
     }
 }
