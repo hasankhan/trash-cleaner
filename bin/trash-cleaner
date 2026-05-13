@@ -1,9 +1,3 @@
-#!/usr/bin/env node
-
-// Use tsx to run TypeScript directly
-import { register } from 'node:module';
-import { pathToFileURL } from 'node:url';
-
-register('tsx/esm', pathToFileURL(import.meta.url));
-
-await import('../index.ts');
+#!/usr/bin/env sh
+REAL_PATH="$(readlink -f "$0")"
+exec node --import=tsx "$(dirname "$REAL_PATH")/../index.ts" "$@"
