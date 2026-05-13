@@ -7,14 +7,14 @@ import { ProgressReporter } from '../../lib/reporter/progress-reporter.js';
  * Integration tests that exercise the full flow with mocked email clients.
  */
 describe('Integration: Full cleanup flow', () => {
-    let client, reporter;
+    let client: any, reporter: ProgressReporter;
 
     before(() => {
         sinon.stub(console, 'log');
     });
 
     after(() => {
-        console.log.restore();
+        (console.log as sinon.SinonStub).restore();
     });
 
     beforeEach(() => {
@@ -165,11 +165,11 @@ describe('Integration: TrashCleanerFactory full flow', () => {
     });
 
     after(() => {
-        console.log.restore();
+        (console.log as sinon.SinonStub).restore();
     });
 
     it('creates cleaner and processes emails end-to-end', async () => {
-        const configStore = {
+        const configStore: any = {
             getJson: sinon.stub(),
             putJson: sinon.stub().resolves()
         };

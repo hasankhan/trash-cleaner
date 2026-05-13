@@ -7,7 +7,7 @@ import { Cli } from '../lib/cli.js';
 import { ActionLog } from '../lib/utils/action-log.js';
 
 describe('Cli', () => {
-    let cli, sandbox;
+    let cli: any, sandbox: sinon.SinonSandbox;
 
     beforeEach(() => {
         sandbox = sinon.createSandbox();
@@ -30,30 +30,30 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', '-c', '/nonexistent/path']);
 
             assert.isFalse(result);
-            sinon.assert.calledOnce(console.error);
-            assert.include(console.error.firstCall.args[0], 'Config directory not found');
-            assert.include(console.error.firstCall.args[0], 'trash-cleaner init');
+            sinon.assert.calledOnce(console.error as sinon.SinonStub);
+            assert.include((console.error as sinon.SinonStub).firstCall.args[0], 'Config directory not found');
+            assert.include((console.error as sinon.SinonStub).firstCall.args[0], 'trash-cleaner init');
         });
 
         it('returns false and logs init hint in debug mode too', async () => {
             const result = await cli.run(['node', 'trash-cleaner', '-c', '/nonexistent/path', '-d']);
 
             assert.isFalse(result);
-            sinon.assert.calledOnce(console.error);
-            assert.include(console.error.firstCall.args[0], 'Config directory not found');
+            sinon.assert.calledOnce(console.error as sinon.SinonStub);
+            assert.include((console.error as sinon.SinonStub).firstCall.args[0], 'Config directory not found');
         });
 
         it('throws for unsupported email service', async () => {
             // Commander will throw/exit for invalid choices, so we test _createEmailClient directly
             const result = await cli._createEmailClient({}, 'yahoo', false, false)
-                .catch(err => err);
+                .catch((err: Error) => err);
 
             assert.match(result.message, /not yet implemented/);
         });
     });
 
     describe('init', () => {
-        let tmpDir;
+        let tmpDir: string;
 
         beforeEach(() => {
             tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trash-cleaner-test-'));
@@ -113,13 +113,13 @@ describe('Cli', () => {
             cli = new Cli();
             await cli.run(['node', 'trash-cleaner', 'init', configDir]);
 
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg.includes('Next steps')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg.includes('Next steps')));
         });
     });
 
     describe('list-rules', () => {
-        let tmpDir;
+        let tmpDir: string;
 
         beforeEach(() => {
             tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trash-cleaner-rules-'));
@@ -141,11 +141,11 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'list-rules', tmpDir]);
 
             assert.isTrue(result);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg.includes('Total rules: 2')));
-            assert.isTrue(logCalls.some(msg => msg.includes('/casino/')));
-            assert.isTrue(logCalls.some(msg => msg.includes('Action: delete')));
-            assert.isTrue(logCalls.some(msg => msg.includes('Action: archive')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg.includes('Total rules: 2')));
+            assert.isTrue(logCalls.some((msg: string) => msg.includes('/casino/')));
+            assert.isTrue(logCalls.some((msg: string) => msg.includes('Action: delete')));
+            assert.isTrue(logCalls.some((msg: string) => msg.includes('Action: archive')));
         });
 
         it('shows allowlist when present', async () => {
@@ -158,9 +158,9 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'list-rules', tmpDir]);
 
             assert.isTrue(result);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('Allowlist')));
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('boss@example')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('Allowlist')));
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('boss@example')));
         });
 
         it('returns false for invalid config directory', async () => {
@@ -260,8 +260,8 @@ describe('Cli', () => {
 
             await cli._runInteractive(trashCleaner);
 
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('Casino spam')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('Casino spam')));
         });
 
         it('does nothing when all declined', async () => {
@@ -278,8 +278,8 @@ describe('Cli', () => {
             await cli._runInteractive(trashCleaner);
 
             sinon.assert.notCalled(trashCleaner.processEmails);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('No emails selected')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('No emails selected')));
         });
 
         it('reports no trash found', async () => {
@@ -294,13 +294,13 @@ describe('Cli', () => {
             await cli._runInteractive(trashCleaner);
 
             sinon.assert.notCalled(trashCleaner.processEmails);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('No trash emails')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('No trash emails')));
         });
     });
 
     describe('undo', () => {
-        let tmpDir;
+        let tmpDir: string;
 
         beforeEach(() => {
             tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-undo-'));
@@ -316,8 +316,8 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'undo', tmpDir]);
 
             assert.isTrue(result);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('No actions to undo')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('No actions to undo')));
         });
 
         it('shows last batch and cancels on decline', async () => {
@@ -330,13 +330,13 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'undo', tmpDir]);
 
             assert.isTrue(result);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('Cancelled')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('Cancelled')));
         });
     });
 
     describe('validate', () => {
-        let tmpDir;
+        let tmpDir: string;
 
         beforeEach(() => {
             tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-validate-'));
@@ -363,8 +363,8 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'validate', tmpDir]);
 
             assert.isTrue(result);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('Configuration is valid')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('Configuration is valid')));
         });
 
         it('reports error for invalid keywords.json', async () => {
@@ -375,8 +375,8 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'validate', tmpDir]);
 
             assert.isFalse(result);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('Validation failed')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('Validation failed')));
         });
 
         it('reports missing keywords.json as error', async () => {
@@ -385,8 +385,8 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'validate', tmpDir]);
 
             assert.isFalse(result);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('not found')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('not found')));
         });
 
         it('validates allowlist.json when present', async () => {
@@ -399,8 +399,8 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'validate', tmpDir]);
 
             assert.isTrue(result);
-            const logCalls = console.log.args.map(a => a[0]);
-            assert.isTrue(logCalls.some(msg => msg && msg.includes('1 pattern')));
+            const logCalls = (console.log as sinon.SinonStub).args.map((a: any[]) => a[0]);
+            assert.isTrue(logCalls.some((msg: string) => msg && msg.includes('1 pattern')));
         });
     });
 
@@ -409,10 +409,10 @@ describe('Cli', () => {
             sandbox.stub(console, 'log');
         });
 
-        function mockReadline(cliInstance, answers) {
+        function mockReadline(cliInstance: any, answers: string[]) {
             let callIndex = 0;
             sandbox.stub(cliInstance, '_createReadlineInterface').returns({
-                question: (q, cb) => cb(answers[callIndex++] || ''),
+                question: (_q: string, cb: (answer: string) => void) => cb(answers[callIndex++] || ''),
                 close: () => {}
             });
         }
@@ -423,7 +423,7 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'login']);
 
             assert.isFalse(result);
-            sinon.assert.calledWith(console.error, 'Error: IMAP host is required.');
+            sinon.assert.calledWith(console.error as sinon.SinonStub, 'Error: IMAP host is required.');
         });
 
         it('returns false when email is empty', async () => {
@@ -432,7 +432,7 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'login']);
 
             assert.isFalse(result);
-            sinon.assert.calledWith(console.error, 'Error: Email address is required.');
+            sinon.assert.calledWith(console.error as sinon.SinonStub, 'Error: Email address is required.');
         });
 
         it('returns false when password is empty', async () => {
@@ -441,7 +441,7 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'login']);
 
             assert.isFalse(result);
-            sinon.assert.calledWith(console.error, 'Error: App password is required.');
+            sinon.assert.calledWith(console.error as sinon.SinonStub, 'Error: App password is required.');
         });
 
         it('returns false when Gmail JSON is empty', async () => {
@@ -450,7 +450,7 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'login', '-s', 'gmail']);
 
             assert.isFalse(result);
-            sinon.assert.calledWith(console.error, 'Error: OAuth2 credentials JSON is required.');
+            sinon.assert.calledWith(console.error as sinon.SinonStub, 'Error: OAuth2 credentials JSON is required.');
         });
 
         it('returns false when Outlook client ID is empty', async () => {
@@ -459,7 +459,7 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'login', '-s', 'outlook']);
 
             assert.isFalse(result);
-            sinon.assert.calledWith(console.error, 'Error: Client ID is required.');
+            sinon.assert.calledWith(console.error as sinon.SinonStub, 'Error: Client ID is required.');
         });
 
         it('returns false when Outlook tenant ID is empty', async () => {
@@ -468,7 +468,7 @@ describe('Cli', () => {
             const result = await cli.run(['node', 'trash-cleaner', 'login', '-s', 'outlook']);
 
             assert.isFalse(result);
-            sinon.assert.calledWith(console.error, 'Error: Tenant ID is required.');
+            sinon.assert.calledWith(console.error as sinon.SinonStub, 'Error: Tenant ID is required.');
         });
     });
 });

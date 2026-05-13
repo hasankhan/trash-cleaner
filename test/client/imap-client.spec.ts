@@ -3,7 +3,7 @@ import { assert } from 'chai';
 import { ImapClient, ImapClientFactory } from '../../lib/client/imap-client.js';
 
 describe('ImapClient', () => {
-    let sandbox, mockImapFlowInstance;
+    let sandbox: sinon.SinonSandbox, mockImapFlowInstance: any;
 
     beforeEach(() => {
         sandbox = sinon.createSandbox();
@@ -25,15 +25,15 @@ describe('ImapClient', () => {
 
     afterEach(() => sandbox.restore());
 
-    function createClient(archiveFolder) {
+    function createClient(archiveFolder?: string): ImapClient {
         const client = new ImapClient({
             host: 'imap.gmail.com',
             port: 993,
             secure: true,
             auth: { user: 'test@gmail.com', pass: 'secret' }
-        }, archiveFolder);
+        } as any, archiveFolder);
         // Override _createClient to inject our mock
-        sandbox.stub(client, '_createClient').returns(mockImapFlowInstance);
+        sandbox.stub(client as any, '_createClient').returns(mockImapFlowInstance);
         return client;
     }
 
@@ -136,7 +136,7 @@ describe('ImapClient', () => {
             try {
                 await client.getUnreadEmails();
                 assert.fail('should throw');
-            } catch (err) {
+            } catch (err: any) {
                 assert.include(err.message, 'search failed');
             }
 
@@ -149,7 +149,7 @@ describe('ImapClient', () => {
     describe('deleteEmails', () => {
         it('deletes messages by UID', async () => {
             const client = createClient();
-            const emails = [{ id: '101' }, { id: '102' }];
+            const emails = [{ id: '101' }, { id: '102' }] as any;
 
             await client.deleteEmails(emails);
 
@@ -164,9 +164,9 @@ describe('ImapClient', () => {
             mockImapFlowInstance.messageDelete.rejects(new Error('delete error'));
 
             try {
-                await client.deleteEmails([{ id: '1' }]);
+                await client.deleteEmails([{ id: '1' }] as any);
                 assert.fail('should throw');
-            } catch (err) {
+            } catch (err: any) {
                 assert.match(err.message, /Failed to delete messages/);
             }
         });
@@ -175,7 +175,7 @@ describe('ImapClient', () => {
     describe('archiveEmails', () => {
         it('moves messages to archive folder', async () => {
             const client = createClient('[Gmail]/All Mail');
-            const emails = [{ id: '101' }];
+            const emails = [{ id: '101' }] as any;
 
             await client.archiveEmails(emails);
 
@@ -187,7 +187,7 @@ describe('ImapClient', () => {
 
         it('uses default archive folder when not specified', async () => {
             const client = createClient();
-            const emails = [{ id: '50' }];
+            const emails = [{ id: '50' }] as any;
 
             await client.archiveEmails(emails);
 
@@ -200,9 +200,9 @@ describe('ImapClient', () => {
             mockImapFlowInstance.messageMove.rejects(new Error('move error'));
 
             try {
-                await client.archiveEmails([{ id: '1' }]);
+                await client.archiveEmails([{ id: '1' }] as any);
                 assert.fail('should throw');
-            } catch (err) {
+            } catch (err: any) {
                 assert.match(err.message, /Failed to archive messages/);
             }
         });
@@ -211,7 +211,7 @@ describe('ImapClient', () => {
     describe('markAsReadEmails', () => {
         it('adds Seen flag to messages', async () => {
             const client = createClient();
-            const emails = [{ id: '101' }, { id: '102' }];
+            const emails = [{ id: '101' }, { id: '102' }] as any;
 
             await client.markAsReadEmails(emails);
 
@@ -226,9 +226,9 @@ describe('ImapClient', () => {
             mockImapFlowInstance.messageFlagsAdd.rejects(new Error('flag error'));
 
             try {
-                await client.markAsReadEmails([{ id: '1' }]);
+                await client.markAsReadEmails([{ id: '1' }] as any);
                 assert.fail('should throw');
-            } catch (err) {
+            } catch (err: any) {
                 assert.match(err.message, /Failed to mark messages as read/);
             }
         });
@@ -241,7 +241,7 @@ describe('ImapClient', () => {
             try {
                 await client.restoreEmails(['1', '2']);
                 assert.fail('should throw');
-            } catch (err) {
+            } catch (err: any) {
                 assert.include(err.message, 'Undo is not supported in IMAP mode');
                 assert.include(err.message, '--service gmail');
             }
@@ -250,7 +250,7 @@ describe('ImapClient', () => {
 });
 
 describe('ImapClientFactory', () => {
-    let sandbox;
+    let sandbox: sinon.SinonSandbox;
 
     beforeEach(() => {
         sandbox = sinon.createSandbox();
@@ -260,18 +260,18 @@ describe('ImapClientFactory', () => {
 
     describe('multi-account file names', () => {
         it('uses default file name when no account specified', () => {
-            const factory = new ImapClientFactory({});
-            assert.equal(factory._credentialsFile, 'imap.credentials.json');
+            const factory = new ImapClientFactory({} as any);
+            assert.equal((factory as any)._credentialsFile, 'imap.credentials.json');
         });
 
         it('uses default file name for "default" account', () => {
-            const factory = new ImapClientFactory({}, 'default');
-            assert.equal(factory._credentialsFile, 'imap.credentials.json');
+            const factory = new ImapClientFactory({} as any, 'default');
+            assert.equal((factory as any)._credentialsFile, 'imap.credentials.json');
         });
 
         it('uses account-specific file name for named account', () => {
-            const factory = new ImapClientFactory({}, 'work');
-            assert.equal(factory._credentialsFile, 'imap.credentials.work.json');
+            const factory = new ImapClientFactory({} as any, 'work');
+            assert.equal((factory as any)._credentialsFile, 'imap.credentials.work.json');
         });
     });
 
@@ -287,7 +287,7 @@ describe('ImapClientFactory', () => {
             const configStore = {
                 getJson: sandbox.stub().resolves(credentials),
                 putJson: sandbox.stub().resolves()
-            };
+            } as any;
             const factory = new ImapClientFactory(configStore);
 
             const client = await factory.getInstance(false, false);
@@ -301,10 +301,10 @@ describe('ImapClientFactory', () => {
             const configStore = {
                 getJson: sandbox.stub().rejects(new Error('not found')),
                 putJson: sandbox.stub().resolves()
-            };
+            } as any;
             const factory = new ImapClientFactory(configStore);
 
-            sandbox.stub(factory, '_promptCredentials').resolves({
+            sandbox.stub(factory as any, '_promptCredentials').resolves({
                 host: 'imap.test.com',
                 port: 993,
                 user: 'user@test.com',
@@ -313,7 +313,7 @@ describe('ImapClientFactory', () => {
 
             const client = await factory.getInstance(false, false);
 
-            sinon.assert.calledOnce(factory._promptCredentials);
+            sinon.assert.calledOnce((factory as any)._promptCredentials);
             sinon.assert.calledOnce(configStore.putJson);
             assert.exists(client);
         });
@@ -328,10 +328,10 @@ describe('ImapClientFactory', () => {
             const configStore = {
                 getJson: sandbox.stub().resolves(credentials),
                 putJson: sandbox.stub().resolves()
-            };
+            } as any;
             const factory = new ImapClientFactory(configStore);
 
-            sandbox.stub(factory, '_promptCredentials').resolves({
+            sandbox.stub(factory as any, '_promptCredentials').resolves({
                 host: 'imap.gmail.com',
                 port: 993,
                 user: 'test@gmail.com',
@@ -340,7 +340,7 @@ describe('ImapClientFactory', () => {
 
             const client = await factory.getInstance(true, false);
 
-            sinon.assert.calledOnce(factory._promptCredentials);
+            sinon.assert.calledOnce((factory as any)._promptCredentials);
             assert.exists(client);
         });
     });
