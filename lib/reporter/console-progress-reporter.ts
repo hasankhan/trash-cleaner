@@ -68,6 +68,13 @@ class ConsoleProgressReporter extends ProgressReporter {
     }
 
     /**
+     * An event that fires when starting batched LLM evaluation.
+     */
+    onEvaluatingLlm(count: number): void {
+        this._update(`Classifying ${count} email(s) with LLM...`);
+    }
+
+    /**
      * An event that fires when trash emails are being deleted.
      */
     onDeletingTrash(): void {

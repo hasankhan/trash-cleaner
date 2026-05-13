@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { renderPrompt, DEFAULT_PROMPT } from '../../lib/classifier/llm-cli-classifier.js';
+import { renderPrompt, parseBatchResponse, DEFAULT_PROMPT, DEFAULT_BATCH_PROMPT } from '../../lib/classifier/llm-cli-classifier.js';
 
 describe('LLM CLI Classifier', () => {
   describe('renderPrompt', () => {
@@ -37,6 +37,57 @@ describe('LLM CLI Classifier', () => {
     it('asks for true/false response', () => {
       assert.include(DEFAULT_PROMPT, 'true');
       assert.include(DEFAULT_PROMPT, 'false');
+    });
+  });
+
+  describe('DEFAULT_BATCH_PROMPT', () => {
+    it('contains required placeholders', () => {
+      assert.include(DEFAULT_BATCH_PROMPT, '{{rule}}');
+      assert.include(DEFAULT_BATCH_PROMPT, '{{emails}}');
+    });
+  });
+
+  describe('parseBatchResponse', () => {
+    it('parses colon-separated format', () => {
+      const results = parseBatchResponse('1: true\n2: false\n3: true', 3);
+      assert.equal(results.get(0), true);
+      assert.equal(results.get(1), false);
+      assert.equal(results.get(2), true);
+    });
+
+    it('parses dot-separated format', () => {
+      const results = parseBatchResponse('1. true\n2. false', 2);
+      assert.equal(results.get(0), true);
+      assert.equal(results.get(1), false);
+    });
+
+    it('parses space-separated format', () => {
+      const results = parseBatchResponse('1 true\n2 false', 2);
+      assert.equal(results.get(0), true);
+      assert.equal(results.get(1), false);
+    });
+
+    it('is case insensitive', () => {
+      const results = parseBatchResponse('1: True\n2: FALSE', 2);
+      assert.equal(results.get(0), true);
+      assert.equal(results.get(1), false);
+    });
+
+    it('ignores lines without numbers', () => {
+      const results = parseBatchResponse('Here are the results:\n1: true\n2: false', 2);
+      assert.equal(results.size, 2);
+      assert.equal(results.get(0), true);
+    });
+
+    it('ignores out of range indices', () => {
+      const results = parseBatchResponse('1: true\n5: true', 3);
+      assert.equal(results.size, 1);
+      assert.equal(results.get(0), true);
+    });
+
+    it('handles empty response', () => {
+      const results = parseBatchResponse('', 3);
+      assert.equal(results.size, 0);
     });
   });
 });

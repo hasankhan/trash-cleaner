@@ -31,6 +31,11 @@ class ProgressReporter {
     onEvaluatingEmail(_current: number, _total: number): void { }
 
     /**
+     * An event that fires when starting batched LLM evaluation.
+     */
+    onEvaluatingLlm(_count: number): void { }
+
+    /**
      * An event that fires when trash emails are being deleted.
      */
     onDeletingTrash(): void { }

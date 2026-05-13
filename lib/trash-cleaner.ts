@@ -1,7 +1,7 @@
 import diacriticLess from 'diacriticless';
 
 import { ConsoleProgressReporter } from './reporter/console-progress-reporter.js';
-import { classifyWithCli } from './classifier/llm-cli-classifier.js';
+import { classifyWithCli, classifyBatchWithCli } from './classifier/llm-cli-classifier.js';
 import { SeenEmailCache } from './utils/seen-email-cache.js';
 import type { Email } from './client/email-client.js';
 import type { EmailClient } from './client/email-client.js';
@@ -152,9 +152,9 @@ class KeywordTrashRule extends TrashRule {
  * The `value` field is a natural-language description (e.g. "marketing email").
  */
 class LlmTrashRule extends TrashRule {
-    private label: string;
+    readonly label: string;
     private labels: string[];
-    private provider: LlmProvider;
+    readonly provider: LlmProvider;
 
     /**
      * Creates an instance of LlmTrashRule.
@@ -169,13 +169,18 @@ class LlmTrashRule extends TrashRule {
     }
 
     /**
+     * Checks if the email matches this rule's label/folder scope.
+     */
+    matchesLabels(email: Email): boolean {
+        return this.labels.some(label =>
+            label === '*' || email.labels.includes(label));
+    }
+
+    /**
      * Checks if the email matches this LLM rule.
      */
     async isMatch(email: Email): Promise<boolean> {
-        // Check label/folder scope first (cheap check before expensive LLM call)
-        const labelMatch = this.labels.some(label =>
-            label === '*' || email.labels.includes(label));
-        if (!labelMatch) {
+        if (!this.matchesLabels(email)) {
             return false;
         }
 
@@ -377,12 +382,29 @@ class TrashCleaner {
             : normalized;
 
         const trashEmails: Email[] = [];
+        const needsLlm: Email[] = [];
+
+        // Phase 1: Run keyword rules (instant)
         for (let i = 0; i < toEvaluate.length; i++) {
             this._reporter.onEvaluatingEmail(i + 1, toEvaluate.length);
             const email = toEvaluate[i]!;
-            if (await this._isTrashEmail(email)) {
-                trashEmails.push(email);
+
+            if (this._isAllowlisted(email) || !this._meetsMinAge(email)) {
+                continue;
             }
+
+            if (this._matchKeywordRules(email)) {
+                trashEmails.push(email);
+            } else if (this._hasLlmRules()) {
+                needsLlm.push(email);
+            }
+        }
+
+        // Phase 2: Batch LLM evaluation (single call per rule)
+        if (needsLlm.length > 0) {
+            this._reporter.onEvaluatingLlm(needsLlm.length);
+            const llmMatches = await this._batchLlmEvaluation(needsLlm);
+            trashEmails.push(...llmMatches);
         }
 
         this._reporter.onTrashEmailsIdentified(trashEmails);
@@ -424,6 +446,67 @@ class TrashCleaner {
             }
         }
         return false;
+    }
+
+    /**
+     * Matches an email against keyword rules only (no LLM rules).
+     * Tags the email with the action from the first matching rule.
+     */
+    private _matchKeywordRules(email: Email): boolean {
+        for (const rule of this._rules) {
+            if (rule instanceof KeywordTrashRule && rule.isMatch(email)) {
+                email._action = rule.action;
+                email._rule = rule.title;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if any configured rule is an LLM rule.
+     */
+    private _hasLlmRules(): boolean {
+        return this._rules.some(rule => rule instanceof LlmTrashRule);
+    }
+
+    /**
+     * Evaluates emails against all LLM rules in batched calls.
+     * Each LLM rule sends one batched prompt for all candidate emails.
+     */
+    private async _batchLlmEvaluation(emails: Email[]): Promise<Email[]> {
+        const matched: Email[] = [];
+        const remaining = new Set(emails);
+
+        for (const rule of this._rules) {
+            if (!(rule instanceof LlmTrashRule) || remaining.size === 0) {
+                continue;
+            }
+
+            // Filter to emails that match this rule's label scope
+            const candidates = [...remaining].filter(email =>
+                rule.matchesLabels(email));
+
+            if (candidates.length === 0) {
+                continue;
+            }
+
+            const results = await classifyBatchWithCli(
+                candidates, rule.label, rule.provider
+            );
+
+            for (const [index, isMatch] of results) {
+                if (isMatch && remaining.has(candidates[index]!)) {
+                    const email = candidates[index]!;
+                    email._action = rule.action;
+                    email._rule = rule.title;
+                    matched.push(email);
+                    remaining.delete(email);
+                }
+            }
+        }
+
+        return matched;
     }
 
     /**

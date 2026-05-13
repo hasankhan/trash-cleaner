@@ -1,14 +1,15 @@
 # LLM provider configurations
 # Each provider defines how to invoke an external AI CLI tool
 # The {{prompt}} placeholder in args is replaced with the classification prompt
+# Emails are batched into a single call per rule for efficiency
 
 claude:
   command: claude
   args: ["--print", "{{prompt}}"]
 
 copilot:
-  command: copilot-cli
-  args: ["-p", "{{prompt}}"]
+  command: copilot
+  args: ["-s", "-p", "{{prompt}}", "--model", "claude-haiku-4.5"]
 
 ollama:
   command: ollama
