@@ -117,7 +117,7 @@ describe('GmailCilent', () => {
 
             await client.deleteEmails([{ id: '123' }] as any);
 
-            const args = { userId: 'me', ids: ['123'] };
+            const args = { userId: 'me', requestBody: { ids: ['123'] } };
             sinon.assert.calledWith(gmail.users.messages.batchDelete, args);
         });
     });
@@ -130,8 +130,10 @@ describe('GmailCilent', () => {
 
             sinon.assert.calledWith(gmail.users.messages.batchModify, {
                 userId: 'me',
-                ids: ['123'],
-                removeLabelIds: ['INBOX']
+                requestBody: {
+                    ids: ['123'],
+                    removeLabelIds: ['INBOX']
+                }
             });
         });
 
@@ -155,8 +157,10 @@ describe('GmailCilent', () => {
 
             sinon.assert.calledWith(gmail.users.messages.batchModify, {
                 userId: 'me',
-                ids: ['123'],
-                removeLabelIds: ['UNREAD']
+                requestBody: {
+                    ids: ['123'],
+                    removeLabelIds: ['UNREAD']
+                }
             });
         });
 
